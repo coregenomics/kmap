@@ -1,0 +1,21 @@
+Package: kmap
+Type: Package
+Title: A Generator of Mappable Chromosomal Regions Based on K-mer Length
+Version: 0.1.0
+Author: Deivydas Giedrimas, Pariksheet Nanda
+Maintainer: Deivydas Giedrimas <giedrimd@gmail.com>
+Description: Taking a BSgenome input, mappable regions are determined from base
+    pair-only regions of the chromosome sequence, and split into reads of 
+    length k. These kmers are compared to a PDict dicitonary, also derived from
+    the chromosomal sequence to indicate the number of hits, and eliminate
+    unmappable regions.
+License: GPL-3 https://www.tldrlegal.com/l/gpl-3.0
+Encoding: UTF-8
+LazyData: true
+Imports: Biostrings,
+    BiocParallel,
+    BSgenome.Hsapiens.UCSC.hg19,
+    dplyr,
+    R (>= 3.1.0)
+Suggests: ,
+    testthat
