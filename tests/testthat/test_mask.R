@@ -5,6 +5,26 @@ suppressPackageStartupMessages({
 
 context("Masking non-standard DNA bases")
 
+## Functions to create Fixtures
+##
+## Find non-standard DNA bases.
+ir_nonstd <- function(dnastring) {
+    dnastring %>% maskMotif("N") %>% masks() %>% .[[1]]
+}
+## Allow BSgenome to be converted to GRanges object.
+setAs("BSgenome", "GRanges",
+      function(from) {
+          gr <- makeGRangesFromDataFrame(
+              data.frame(chr = seqnames(from),
+                         start = rep(1, length(from)),
+                         end = seqlengths(from)),
+              ignore.strand = TRUE)
+          ## Not sure why rownames are being set.  Removing in case
+          ## they interfere with comparisons later.
+          names(gr) <- NULL
+          gr
+      })
+
 ## Fixtures
 ##
 ## DNA string
@@ -12,35 +32,14 @@ context("Masking non-standard DNA bases")
 dna_str <- DNAString(.str)
 .bases <- unlist(strsplit(.str, split = NULL))
 dna_ir <- IRanges(Rle(.bases %in% DNA_BASES))
-
+## Biostring genome
+##
 ## Generating a mock BSgenome relies on having many disk files, which
 ## is not a very practical fixture.  Therefore use the smallest
-## existing genome with unknown bases.
-ir_nonstd <- function(dnastring) {
-    dnastring %>% maskMotif("N") %>% masks() %>% .[[1]]
-}
-count_nonstd <- function(dnastring) {
-    ir_nonstd(dnastring) %>% width() %>% sum()
-}
-has_nonstd <- function(dnastring) {
-    count_nonstd(dnastring) > 0
-}
-inspect_genome <- function(bsgenome) {
-    for (chrom in seqnames(bsgenome)) {
-        count <-  count_nonstd(bsgenome[[chrom]])
-        print(c(chrom, count))
-    }
-}
-## Ecoli has 3 chromosomes with non-standard bases: NC008563,
-## NC_004431, NC_002655
+## existing genome with unknown bases.  This Ecoli has 3 chromosomes
+## with non-standard bases: NC008563, NC_004431, NC_002655
 bsgenome <- getBSgenome("BSgenome.Ecoli.NCBI.20080805")
-##inspect_genome(bsgenome)
-gr <- makeGRangesFromDataFrame(
-    data.frame(chr = seqnames(bsgenome),
-               start = rep(1, length(bsgenome)),
-               end = seqlengths(bsgenome)),
-    ignore.strand = TRUE) %>%
-    `names<-`(NULL)
+gr <- as(bsgenome, "GRanges")
 
 ## Function to test:
 ##   stddna_chrom(x)
@@ -85,12 +84,7 @@ test_that("stddna returns GRanges-class for BSgenome", {
 ## genome with no non-standard DNA bases.
 test_that("stddna returns contiguous GRanges for fully sequenced BSgenome", {
     bsgenome <- getBSgenome("BSgenome.Scerevisiae.UCSC.sacCer2")
-    gr <- makeGRangesFromDataFrame(
-        data.frame(chr = seqnames(bsgenome),
-                   start = rep(1, length(bsgenome)),
-                   end = seqlengths(bsgenome)),
-        ignore.strand = TRUE) %>%
-        `names<-`(NULL)
+    gr <- as(bsgenome, "GRanges")
     expect_is(stddna(bsgenome), "GRanges")
     expect_equal(stddna(bsgenome), gr)
 })
