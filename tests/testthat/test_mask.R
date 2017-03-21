@@ -7,23 +7,32 @@ context("Masking non-standard DNA bases")
 
 ## Functions to create Fixtures
 ##
-## Find non-standard DNA bases.
-ir_nonstd <- function(dnastring) {
-    dnastring %>% maskMotif("N") %>% masks() %>% .[[1]]
-}
 ## Allow BSgenome to be converted to GRanges object.
 setAs("BSgenome", "GRanges",
       function(from) {
-          gr <- makeGRangesFromDataFrame(
+          makeGRangesFromDataFrame(
               data.frame(chr = seqnames(from),
                          start = rep(1, length(from)),
                          end = seqlengths(from)),
               ignore.strand = TRUE)
-          ## Not sure why rownames are being set.  Removing in case
-          ## they interfere with comparisons later.
-          names(gr) <- NULL
-          gr
       })
+## Allow BSgenome to be converted to DNAStringSet.
+setAs("BSgenome", "DNAStringSet",
+      function(from) {
+          as(from, "GRanges") %>% Views(from, .) %>%
+              as("DNAStringSet")
+      })
+## Find non-standard DNA bases.
+ir_nonstd <- function(dnastring) {
+    dnastring %>% maskMotif("N") %>% masks() %>% .[[1]] # nolint
+}
+## Find non-standard DNA bases.
+gr_nonstd <- function(genome) {
+    ## Use BSgenomeViews To iterate over the chromosomes.
+    lapply(as(genome, "DNAStringSet"), ir_nonstd) %>%
+        as("RangesList") %>%
+        as("GRanges")
+}
 
 ## Fixtures
 ##
@@ -39,7 +48,8 @@ dna_ir <- IRanges(Rle(.bases %in% DNA_BASES))
 ## existing genome with unknown bases.  This Ecoli has 3 chromosomes
 ## with non-standard bases: NC008563, NC_004431, NC_002655
 bsgenome <- getBSgenome("BSgenome.Ecoli.NCBI.20080805")
-gr <- as(bsgenome, "GRanges")
+gr <- GenomicRanges::setdiff(as(bsgenome, "GRanges"),
+                             gr_nonstd(bsgenome))
 
 ## Function to test:
 ##   stddna_chrom(x)
@@ -84,7 +94,11 @@ test_that("stddna returns GRanges-class for BSgenome", {
 ## genome with no non-standard DNA bases.
 test_that("stddna returns contiguous GRanges for fully sequenced BSgenome", {
     bsgenome <- getBSgenome("BSgenome.Scerevisiae.UCSC.sacCer2")
-    gr <- as(bsgenome, "GRanges")
+    gr <-GenomicRanges::setdiff(as(bsgenome, "GRanges"),
+                                gr_nonstd(bsgenome))
+    ## Make sure our fixture contains no non-standard DNA bases.
+    expect_equal(gr, as(bsgenome, "GRanges") %>% `names<-`(NULL))
+    ## Actual tests.
     expect_is(stddna(bsgenome), "GRanges")
     expect_equal(stddna(bsgenome), gr)
 })
