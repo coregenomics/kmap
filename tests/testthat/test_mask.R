@@ -94,7 +94,9 @@ test_that("stddna returns contiguous GRanges for fully sequenced BSgenome", {
     gr <-GenomicRanges::setdiff(as(bsgenome, "GRanges"),
                                 gr_nonstd(bsgenome))
     ## Make sure our fixture contains no non-standard DNA bases.
-    expect_equal(gr, as(bsgenome, "GRanges") %>% `names<-`(NULL))
+    ## Ignore row names.
+    expect_equal(gr %>% `names<-`(NULL),
+                 as(bsgenome, "GRanges") %>% `names<-`(NULL))
     ## Actual tests.
     expect_is(stddna(bsgenome), "GRanges")
     expect_equal(stddna(bsgenome), gr)
