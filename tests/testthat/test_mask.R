@@ -17,19 +17,16 @@ setAs("BSgenome", "GRanges",
               ignore.strand = TRUE)
       })
 ## Allow BSgenome to be converted to DNAStringSet.
-setAs("BSgenome", "DNAStringSet",
-      function(from) {
-          as(from, "GRanges") %>% Views(from, .) %>%
-              as("DNAStringSet")
-      })
+setAs("BSgenome", "Views",
+      function(from) as(from, "GRanges") %>% BSgenomeViews(from, .))
 ## Find non-standard DNA bases.
 ir_nonstd <- function(dnastring) {
     dnastring %>% maskMotif("N") %>% masks() %>% .[[1]] # nolint
 }
 ## Find non-standard DNA bases.
-gr_nonstd <- function(genome) {
+gr_nonstd <- function(bsgenome) {
     ## Use BSgenomeViews To iterate over the chromosomes.
-    lapply(as(genome, "DNAStringSet"), ir_nonstd) %>%
+    lapply(as(bsgenome, "Views"), ir_nonstd) %>%
         as("RangesList") %>%
         as("GRanges")
 }
@@ -52,24 +49,24 @@ gr <- GenomicRanges::setdiff(as(bsgenome, "GRanges"),
                              gr_nonstd(bsgenome))
 
 ## Function to test:
-##   stddna_chrom(x)
+##   stddna_chrom(bsgenomeviews)
 ## Input:
-##   DNAString
+##   BSgenomeViews
 ## Returns:
 ##   IRanges of regions containing only standard DNA bases (namely,
 ##   the DNA_BASES variable in the BSgenome packages)
 ## Description:
 ##   Create IRanges of standard DNA bases (A, C, G, T).
-test_that("stddna returns IRanges-class for DNAString", {
+test_that("stddna returns IRanges-class for Views", {
     expect_is(stddna_chrom(dna_str), "IRanges")
 })
-test_that("stddna returns empty IRanges for empty DNAString", {
+test_that("stddna returns empty IRanges for empty Views", {
     dna_str <- DNAString()
     dna_ir <- IRanges()
     expect_is(stddna_chrom(dna_str), "IRanges")
     expect_equal(stddna_chrom(dna_str), dna_ir)
 })
-test_that("stddna returns correct IRanges value for DNAString", {
+test_that("stddna returns correct IRanges value for Views", {
     expect_equal(stddna_chrom(dna_str), dna_ir)
 })
 
