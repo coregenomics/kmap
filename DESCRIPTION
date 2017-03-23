@@ -9,7 +9,7 @@ Description: Taking a BSgenome input, mappable regions are determined from base
     length k. These kmers are compared to a PDict dicitonary, also derived from
     the chromosomal sequence to indicate the number of hits, and eliminate
     unmappable regions.
-License: GPL-3 https://www.tldrlegal.com/l/gpl-3.0
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Imports: Biostrings,
