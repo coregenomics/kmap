@@ -101,6 +101,7 @@ test_that("stddna returns contiguous GRanges for fully sequenced BSgenome", {
     expect_is(stddna(bsgenome), "GRanges")
     expect_equal(stddna(bsgenome), gr)
 })
-test_that("stddna returns correct IRanges value for BSgenome", {
-    expect_equal(stddna(bsgenome), gr)
+test_that("stddna returns correct GRanges values for BSgenome", {
+    expect_equal(GenomicRanges::setdiff(stddna(bsgenome), gr) %>% length,
+                 0)
 })
