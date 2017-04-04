@@ -1,57 +1,87 @@
-# source("http://bioconductor.org/biocLite.R")
-# biocLite()
-# biocLite("GenomicRanges")
-# biocLite("Biostrings")
-# biocLite("BSgenome.Hsapiens.UCSC.hg19")
-# # biocLite("BiocParallel")
-# biocLite("BSgenome.Celegans.UCSC.ce2")
-
-
+library(magrittr)
 library(Biostrings)
 library(GenomicRanges)
-# library(BiocParallel)
-# library(BSgenome.Hsapiens.UCSC.hg19)
-library(tidyverse)
-# library(BiocInstaller)
-# biocLite("BSgenome.Ecoli.NCBI.20080805")
-# biocLite("BSgenome.Scerevisiae.UCSC.sacCer2")
+library(BiocParallel)
 
-# # Subset to chromosome x for quick computation
-# genes <- c(BSgenome.Hsapiens.UCSC.hg19[[19]],BSgenome.Hsapiens.UCSC.hg19[[20]])
+## Allow BSgenome to be converted to GRanges object.
+setAs("BSgenome", "GRanges",
+      function(from) {
+          makeGRangesFromDataFrame(
+              data.frame(chr = seqnames(from),
+                         start = rep(1, length(from)),
+                         end = seqlengths(from)),
+              ignore.strand = TRUE) %>%
+              `names<-`(NULL)
+      })
 
-# Create blacklist of unmappable regions, mappable regions w/ only ACGT
-# unmappable <- genes %>% mask("N") %>% gaps %>% as("IRanges")
-# mappable <- genes %>% mask("N") %>% as("IRanges")
-#
-# # Determine starts for reads of width 36, create views
-# starts_map <- mapply(seq,start(mappable),end(mappable)-36)
-# views_map <- IRanges::Views(genes, start=unlist(starts_map), width=36)
-# queries <- DNAStringSet(views_map)
-# system.time({PDict1 <- PDict(head(queries,100000))
-# alignment <- matchPDict(PDict1, chr19, max.mismatch = 0, min.mismatch = 0, with.indels = FALSE, fixed = TRUE, algorithm = "auto", verbose = FALSE)
-# hits <- sapply(alignment,length)>1
-# hit_sequences <- as(alignment, "CompressedIRangesList")%>%.[hits]%>%unlist%>%IRanges::reduce()
-# })
-# hit_sequences
-#
-# matches <- function(query){PDict1 <- PDict(query)
-# alignment <- matchPDict(PDict1, genes, max.mismatch = 0, min.mismatch = 0, with.indels = FALSE, fixed = TRUE, algorithm = "auto", verbose = FALSE)
-# hits <- sapply(alignment,length)>1
-# hit_sequences <- as(alignment, "CompressedIRangesList")%>%.[hits]%>%unlist%>%IRanges::reduce()
-# }
-# queries_list <- split(queries, ceiling(seq_along(queries)/100000))
-# MulticoreParam(progressbar = TRUE)
-# hits <- bplapply(head(queries_list), matches)
-# unmappable_ranges <- hits%>%c(unmappable)%>%as("List")%>%unlist()%>%IRanges::reduce()
+## Allow BSgenome to be converted to Views via GRanges.
+setAs("BSgenome", "Views",
+      function(from) as(from, "GRanges") %>% BSgenomeViews(from, .))
 
-stddna_chrom <- function(dna_str){dna_ir <- dna_str %>% mask("N") %>% as("IRanges")}
-stddna <- function(bsgenome){
-    ranges <- makeGRangesFromDataFrame(
-        data.frame(chr = seqnames(bsgenome),
-                   start = rep(1, length(bsgenome)),
-                   end = seqlengths(bsgenome)),ignore.strand = TRUE) %>%
-        `names<-`(NULL)
-    seqs <- Views(bsgenome, ranges) %>% as("DNAStringSet")
-    genome_ir <- sapply(seqs, stddna_chrom) %>% RangesList %>%
-        `names<-`(seqnames(bsgenome))%>%GRanges
+## Get standard DNA bases from BSgenomeViews by masking off the
+## non-standard bases and returning the resulting ranges.
+gr_masked <- function(views, motif = "N") {
+    seqnames <- seqnames(views)
+    views %>% as("DNAStringSet") %>% sapply(mask, motif) %>%
+        as("RangesList") %>% shift(start(views) - 1) %>%
+        `names<-`(seqnames) %>% as("GRanges")
+}
+
+stddna_from_views <- function(views) {
+    bases_nonstd <- setdiff(DNA_ALPHABET, DNA_BASES)
+    ## FIXME maybe parallelize this for larger genomes.
+    bplapply(bases_nonstd, gr_masked, views = views) %>% sapply(gaps) %>%
+        List() %>% unlist() %>% reduce() %>% gaps()
+}
+
+## BSgenomeViews of standard DNA from BSgenome object.
+stddna_from_genome <- function(bsgenome) {
+    ## Convert to Views here for convenience, instead of subsetting by
+    ## chromosomes.  Views allows more vector operations and preserves
+    ## metadata better than shuttling around chromosomes.
+    bsgenome %>% as("Views") %>% stddna_from_views() %>%
+        BSgenomeViews(subject = bsgenome)
+}
+
+## Chop up BSgenomeViews into kmers.
+kmerize <- function(views, kmer = 36) {
+    ## Ensure that end(views) >= start(views).  Drop rows where this
+    ## is not the case.
+    views <- views[width(views) > kmer]
+    ## Optimize runtime by disabling USE.NAMES.
+    starts <- mapply(seq,
+                     start(views),
+                     end(views) - kmer,
+                     USE.NAMES = FALSE)
+    gr_lengths <- seqnames(views) %>%
+        as.data.frame() %>%
+        dplyr::mutate(len = sapply(starts, length)) %>%
+        dplyr::group_by(value) %>%
+        dplyr::summarise(lengths = sum(len)) %>%
+        .$lengths
+    gr_seqnames <- seqnames(views) %>% `runLength<-`(gr_lengths)
+    gr <- GRanges(ranges = IRanges(start = starts %>% unlist(),
+                                   width = kmer),
+                  seqnames = gr_seqnames)
+    BSgenomeViews(subject(views), gr)
+}
+
+## FIXME yes, this function will be cleaned up.
+mappable <- function() {
+    library(BSgenome)
+    bsgenome <- getBSgenome("BSgenome.Ecoli.NCBI.20080805")
+    ## ## Sanity check - there should be some non-DNA bases
+    ## alphabetFrequency(as(bsgenome, "Views"), baseOnly = TRUE)
+    system.time(views <- stddna(bsgenome))
+    system.time(kmers <- kmerize(views))
+    ## ## Sanity check - there should be no non-standard bases,
+    ## ## otherwise pdict creation will fail.
+    ## alphabetFrequency(kmers, baseOnly = TRUE) %>% colSums()
+    ## ## There isn't really much one can do to speed up the PDict creation.
+    system.time(pdict <- PDict(as(kmers, "DNAStringSet")))
+    ## This step is memory intensive.  Using even more than 1 CPU eats
+    ## all the RAM!  Might need to chop up the DNAStringSet into
+    ## smaller pieces.
+    system.time(hits <- lapply(as(views, "DNAStringSet"), matchPDict,
+                               pdict = pdict))
 }

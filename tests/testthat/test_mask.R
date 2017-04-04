@@ -5,103 +5,71 @@ suppressPackageStartupMessages({
 
 context("Masking non-standard DNA bases")
 
-## Functions to create Fixtures
-##
-## Allow BSgenome to be converted to GRanges object.
-setAs("BSgenome", "GRanges",
-      function(from) {
-          makeGRangesFromDataFrame(
-              data.frame(chr = seqnames(from),
-                         start = rep(1, length(from)),
-                         end = seqlengths(from)),
-              ignore.strand = TRUE)
-      })
-## Allow BSgenome to be converted to DNAStringSet.
-setAs("BSgenome", "Views",
-      function(from) as(from, "GRanges") %>% BSgenomeViews(from, .))
-## Find non-standard DNA bases.
-ir_nonstd <- function(dnastring) {
-    dnastring %>% maskMotif("N") %>% masks() %>% .[[1]] # nolint
-}
-## Find non-standard DNA bases.
-gr_nonstd <- function(bsgenome) {
-    ## Use BSgenomeViews To iterate over the chromosomes.
-    lapply(as(bsgenome, "Views"), ir_nonstd) %>%
-        as("RangesList") %>%
-        as("GRanges")
-}
-
 ## Fixtures
 ##
-## DNA string
-.str <- "TTGAANNNAACTCNACTG"
-dna_str <- DNAString(.str)
-.bases <- unlist(strsplit(.str, split = NULL))
-dna_ir <- IRanges(Rle(.bases %in% DNA_BASES))
-## Biostring genome
-##
-## Generating a mock BSgenome relies on having many disk files, which
-## is not a very practical fixture.  Therefore use the smallest
-## existing genome with unknown bases.  This Ecoli has 3 chromosomes
-## with non-standard bases: NC008563, NC_004431, NC_002655
+## Biostring genome.  Generating a mock BSgenome relies on having many
+## disk files, which is not a very practical fixture.  Therefore use
+## the smallest existing genome with unknown bases.  This Ecoli has 3
+## chromosomes with non-standard bases: NC008563, NC_004431, NC_002655
 bsgenome <- getBSgenome("BSgenome.Ecoli.NCBI.20080805")
-gr <- GenomicRanges::setdiff(as(bsgenome, "GRanges"),
-                             gr_nonstd(bsgenome))
+## BSgenomeView.  Using a simpler DNAString fixture is limited
+## because it does not have a seqnames() accessor.
+.seqname <- "NC_002655"
+.width <- 20
+.region_std <- 1
+.get_start <- function(pattern, width = 3) {
+    mask(bsgenome[[.seqname]], pattern = pattern) %>% gaps() %>%
+        .[width(.) == width] %>% head(1) %>% start()
+}
+.region_start <- .get_start("N")
+.region_middle <- .get_start("D", 1) - .width / 2
+.region_end <- .get_start("N", 2) - .width + 2
+.gr <- GRanges(seqnames = .seqname,
+               ranges = IRanges(
+                   start = c(.region_std, .region_start,
+                             .region_middle, .region_end),
+                   width = .width))
+views <- Views(bsgenome, .gr)
+views
+## GRanges corresponding to view with no non-standard bases.
+.dnas <- DNAStringSet(views) %>% as.character()
+## Slow, but reliable way of checking for standard bases.
+.dna_ir <- function(dna_str) {
+    bases <- unlist(strsplit(dna_str, split = NULL))
+    bases %in% DNA_BASES %>% Rle() %>% IRanges()
+}
+gr <- lapply(.dnas, .dna_ir) %>%
+    `names<-`(seqnames(.gr)) %>%
+    IRangesList %>%
+    shift(start(.gr) - 1) %>%
+    as("GRanges")
 
 ## Function to test:
-##   stddna_chrom(bsgenomeviews)
+##   stddna_from_views(bsgenomeviews)
 ## Input:
 ##   BSgenomeViews
-## Returns:
-##   IRanges of regions containing only standard DNA bases (namely,
-##   the DNA_BASES variable in the BSgenome packages)
-## Description:
-##   Create IRanges of standard DNA bases (A, C, G, T).
-test_that("stddna returns IRanges-class for Views", {
-    expect_is(stddna_chrom(dna_str), "IRanges")
-})
-test_that("stddna returns empty IRanges for empty Views", {
-    dna_str <- DNAString()
-    dna_ir <- IRanges()
-    expect_is(stddna_chrom(dna_str), "IRanges")
-    expect_equal(stddna_chrom(dna_str), dna_ir)
-})
-test_that("stddna returns correct IRanges value for Views", {
-    expect_equal(stddna_chrom(dna_str), dna_ir)
-})
-
-## Function to test:
-##   stddna(genome)
-## Input:
-##   BSgenome
 ## Returns:
 ##   GRanges of regions containing only standard DNA bases (namely,
 ##   the DNA_BASES variable in the BSgenome packages)
 ## Description:
-##   Create GRanges of standard DNA bases (A, C, G, T).  At the time
-##   of writing, BSgenome does not allow subsetting DNAString objects
-##   of more than one chromosome at a time, therefore this function
-##   calls stddna() for each chromosome.  This should be a fast
-##   operation and should not need parallel library computation.
-test_that("stddna returns GRanges-class for BSgenome", {
-    expect_is(stddna(bsgenome), "GRanges")
+##   Create IRanges of standard DNA bases (A, C, G, T).
+test_that("stddna returns GRanges-class for Views", {
+    expect_is(stddna_from_views(views), "GRanges")
 })
-## It's not practical to create an empty BSgenome, as the BSgenome
-## object requires disk files.  Therefore test a completely sequenced
-## genome with no non-standard DNA bases.
-test_that("stddna returns contiguous GRanges for fully sequenced BSgenome", {
-    bsgenome <- getBSgenome("BSgenome.Scerevisiae.UCSC.sacCer2")
-    gr <-GenomicRanges::setdiff(as(bsgenome, "GRanges"),
-                                gr_nonstd(bsgenome))
-    ## Make sure our fixture contains no non-standard DNA bases.
-    ## Ignore row names.
-    expect_equal(gr %>% `names<-`(NULL),
-                 as(bsgenome, "GRanges") %>% `names<-`(NULL))
-    ## Actual tests.
-    expect_is(stddna(bsgenome), "GRanges")
-    expect_equal(stddna(bsgenome), gr)
+test_that("stddna returns empty XRanges for empty Views", {
+    views <- Views(bsgenome, GRanges())
+    expect_is(stddna_from_views(views), "GRanges")
+    expect_equal(
+        stddna_from_views(views) %>% length, 0)
 })
-test_that("stddna returns correct GRanges values for BSgenome", {
-    expect_equal(GenomicRanges::setdiff(stddna(bsgenome), gr) %>% length,
-                 0)
+test_that("stddna returns correct GRanges value for Views", {
+    expect_equal(
+        GenomicRanges::setdiff(stddna_from_views(views), gr) %>% length,
+        0)
+})
+test_that("stddna returns contiguous GRanges", {
+    views_ <- views[c(1, length(views))]
+    gr_ <- gr[c(1, length(gr))]
+    expect_equal(sort(stddna_from_views(views_)),
+                 sort(gr_))
 })
