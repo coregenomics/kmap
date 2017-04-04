@@ -72,7 +72,7 @@ mappable <- function() {
     bsgenome <- getBSgenome("BSgenome.Ecoli.NCBI.20080805")
     ## ## Sanity check - there should be some non-DNA bases
     ## alphabetFrequency(as(bsgenome, "Views"), baseOnly = TRUE)
-    system.time(views <- stddna(bsgenome))
+    system.time(views <- stddna_from_genome(bsgenome))
     system.time(kmers <- kmerize(views))
     ## ## Sanity check - there should be no non-standard bases,
     ## ## otherwise pdict creation will fail.
