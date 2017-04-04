@@ -58,15 +58,14 @@ test_that("stddna returns GRanges-class for Views", {
     expect_is(stddna_from_views(views), "GRanges")
 })
 test_that("stddna returns empty XRanges for empty Views", {
-    views <- Views(bsgenome, GRanges())
-    expect_is(stddna_from_views(views), "GRanges")
-    expect_equal(
-        stddna_from_views(views) %>% length, 0)
+    gr_ <- GRanges(seqinfo = seqinfo(bsgenome))
+    views_ <- Views(bsgenome, gr_)
+    expect_is(stddna_from_views(views_), "GRanges")
+    expect_equal(stddna_from_views(views_), gr_)
 })
 test_that("stddna returns correct GRanges value for Views", {
-    expect_equal(
-        GenomicRanges::setdiff(stddna_from_views(views), gr) %>% length,
-        0)
+    expect_equal(sort(stddna_from_views(views)),
+                 sort(gr))
 })
 test_that("stddna returns contiguous GRanges", {
     views_ <- views[c(1, length(views))]
