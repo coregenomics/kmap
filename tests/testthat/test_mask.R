@@ -28,7 +28,8 @@ bsgenome <- getBSgenome("BSgenome.Ecoli.NCBI.20080805")
                ranges = IRanges(
                    start = c(.region_std, .region_start,
                              .region_middle, .region_end),
-                   width = .width))
+                   width = .width),
+               seqinfo = seqinfo(bsgenome))
 views <- Views(bsgenome, .gr)
 views
 ## GRanges corresponding to view with no non-standard bases.
@@ -39,10 +40,10 @@ views
     bases %in% DNA_BASES %>% Rle() %>% IRanges()
 }
 gr <- lapply(.dnas, .dna_ir) %>%
-    `names<-`(seqnames(.gr)) %>%
     IRangesList %>%
     shift(start(.gr) - 1) %>%
-    as("GRanges")
+    `names<-`(seqnames(.gr)) %>%
+    GRanges(seqinfo = seqinfo(bsgenome))
 
 ## Function to test:
 ##   stddna_from_views(bsgenomeviews)

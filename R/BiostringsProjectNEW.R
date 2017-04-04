@@ -21,10 +21,10 @@ setAs("BSgenome", "Views",
 ## Get standard DNA bases from BSgenomeViews by masking off the
 ## non-standard bases and returning the resulting ranges.
 gr_masked <- function(views, motif = "N") {
-    seqnames <- seqnames(views)
     views %>% as("DNAStringSet") %>% sapply(mask, motif) %>%
         as("RangesList") %>% shift(start(views) - 1) %>%
-        `names<-`(seqnames) %>% as("GRanges")
+        `names<-`(seqnames(views)) %>%
+        GRanges(seqinfo = seqinfo(views))
 }
 
 stddna_from_views <- function(views) {
