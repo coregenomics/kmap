@@ -13,6 +13,7 @@ source("fixtures.R")
 test_that("stddna returns GRanges-class for Views", {
     expect_is(stddna_from_views(views), "GRanges")
 })
+
 test_that("stddna returns empty XRanges for empty Views", {
     gr_ <- GRanges(seqinfo = seqinfo(bsgenome))
     views_ <- Views(bsgenome, gr_)
