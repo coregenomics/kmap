@@ -13,9 +13,20 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.1.0)
-Imports: Biostrings,
+Imports:
+    BSgenome,
     BiocParallel,
-    dplyr
-Suggests: testthat,
+    Biostrings,
+    GenomeInfoDb,
+    GenomicRanges,
+    IRanges,
+    S4Vectors,
+    dplyr,
+    magrittr,
+    methods,
+    plyr,
+Suggests:
+    testthat,
     BSgenome.Ecoli.NCBI.20080805,
-    BSgenome.Scerevisiae.UCSC.sacCer2
+    BSgenome.Scerevisiae.UCSC.sacCer2,
+RoxygenNote: 6.0.1

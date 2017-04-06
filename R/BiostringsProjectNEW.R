@@ -1,12 +1,18 @@
-library(magrittr)
-library(Biostrings)
-library(GenomicRanges)
-library(BiocParallel)
+#' @importFrom BSgenome BSgenome BSgenomeViews subject
+#' @importFrom BiocParallel bplapply
+#' @importFrom Biostrings DNAStringSet DNA_ALPHABET DNA_BASES PDict matchPDict mask
+#' @importFrom GenomeInfoDb seqinfo seqlengths
+#' @importFrom GenomicRanges GRanges end gaps reduce seqnames shift start width
+#' @importFrom IRanges IRanges
+#' @importFrom S4Vectors List runLength<-
+#' @importFrom magrittr %>%
+#' @importFrom methods as
+#' @importFrom plyr .
 
 ## Allow BSgenome to be converted to GRanges object.
 setAs("BSgenome", "GRanges",
       function(from) {
-          makeGRangesFromDataFrame(
+          GenomicRanges::makeGRangesFromDataFrame(
               data.frame(chr = seqnames(from),
                          start = rep(1, length(from)),
                          end = seqlengths(from)),
@@ -55,9 +61,9 @@ kmerize <- function(views, kmer = 36) {
                      USE.NAMES = FALSE)
     gr_lengths <- seqnames(views) %>%
         as.data.frame() %>%
-        dplyr::mutate(len = sapply(starts, length)) %>%
-        dplyr::group_by(value) %>%
-        dplyr::summarise(lengths = sum(len)) %>%
+        dplyr::mutate("len" = sapply(starts, length)) %>%
+        dplyr::group_by("value") %>%
+        dplyr::summarise("lengths" = sum("len")) %>%
         .$lengths
     gr_seqnames <- seqnames(views) %>% `runLength<-`(gr_lengths)
     gr <- GRanges(ranges = IRanges(start = starts %>% unlist(),
@@ -69,7 +75,7 @@ kmerize <- function(views, kmer = 36) {
 ## FIXME yes, this function will be cleaned up.
 mappable <- function() {
     library(BSgenome)
-    bsgenome <- getBSgenome("BSgenome.Ecoli.NCBI.20080805")
+    bsgenome <- BSgenome::getBSgenome("BSgenome.Ecoli.NCBI.20080805")
     ## ## Sanity check - there should be some non-DNA bases
     ## alphabetFrequency(as(bsgenome, "Views"), baseOnly = TRUE)
     system.time(views <- stddna_from_genome(bsgenome))
