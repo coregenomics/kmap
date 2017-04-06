@@ -74,20 +74,32 @@ kmerize <- function(views, kmer = 36) {
 
 ## FIXME yes, this function will be cleaned up.
 mappable <- function() {
-    library(BSgenome)
-    bsgenome <- BSgenome::getBSgenome("BSgenome.Ecoli.NCBI.20080805")
+    message(sprintf(
+        "[%6.2f sec] to load the genome",
+        system.time(
+            bsgenome <-
+                BSgenome::getBSgenome("BSgenome.Ecoli.NCBI.20080805"))[3]))
     ## ## Sanity check - there should be some non-DNA bases
     ## alphabetFrequency(as(bsgenome, "Views"), baseOnly = TRUE)
-    system.time(views <- stddna_from_genome(bsgenome))
-    system.time(kmers <- kmerize(views))
+    message(sprintf(
+        "[%6.2f sec] to subset to standard DNA bases in genome",
+        system.time(views <- stddna_from_genome(bsgenome))[3]))
+    message(sprintf(
+        "[%6.2f sec] to chop up genome into 36-mers",
+        system.time(kmers <- kmerize(views))[3]))
     ## ## Sanity check - there should be no non-standard bases,
     ## ## otherwise pdict creation will fail.
     ## alphabetFrequency(kmers, baseOnly = TRUE) %>% colSums()
     ## ## There isn't really much one can do to speed up the PDict creation.
-    system.time(pdict <- PDict(as(kmers, "DNAStringSet")))
+    message(sprintf(
+        "[%6.2f sec] to create search dictionary",
+        system.time(pdict <- PDict(as(kmers[1:1000000],
+                                      "DNAStringSet")))[3]))
     ## This step is memory intensive.  Using even more than 1 CPU eats
     ## all the RAM!  Might need to chop up the DNAStringSet into
     ## smaller pieces.
-    system.time(hits <- lapply(as(views, "DNAStringSet"), matchPDict,
-                               pdict = pdict))
+    message(sprintf(
+        "[%6.2f sec] to search genome",
+        system.time(hits <- lapply(as(views[1:10], "DNAStringSet"),
+                                   matchPDict, pdict = pdict))[3]))
 }
