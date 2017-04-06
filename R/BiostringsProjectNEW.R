@@ -61,9 +61,9 @@ kmerize <- function(views, kmer = 36) {
                      USE.NAMES = FALSE)
     gr_lengths <- seqnames(views) %>%
         as.data.frame() %>%
-        dplyr::mutate("len" = sapply(starts, length)) %>%
-        dplyr::group_by("value") %>%
-        dplyr::summarise("lengths" = sum("len")) %>%
+        dplyr::mutate(len = sapply(starts, length)) %>%
+        dplyr::group_by(value) %>%
+        dplyr::summarise(lengths = sum(len)) %>%
         .$lengths
     gr_seqnames <- seqnames(views) %>% `runLength<-`(gr_lengths)
     gr <- GRanges(ranges = IRanges(start = starts %>% unlist(),
