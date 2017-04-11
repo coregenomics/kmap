@@ -2,6 +2,7 @@
 
 importFrom(BSgenome,BSgenome)
 importFrom(BSgenome,BSgenomeViews)
+importFrom(BSgenome,elementNROWS)
 importFrom(BSgenome,subject)
 importFrom(BiocParallel,bplapply)
 importFrom(Biostrings,DNAStringSet)

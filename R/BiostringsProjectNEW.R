@@ -1,4 +1,4 @@
-#' @importFrom BSgenome BSgenome BSgenomeViews subject
+#' @importFrom BSgenome BSgenome BSgenomeViews subject elementNROWS
 #' @importFrom BiocParallel bplapply
 #' @importFrom Biostrings DNAStringSet DNA_ALPHABET DNA_BASES PDict matchPDict mask
 #' @importFrom GenomeInfoDb seqinfo seqlengths
@@ -24,13 +24,18 @@ setAs("BSgenome", "GRanges",
 setAs("BSgenome", "Views",
       function(from) as(from, "GRanges") %>% BSgenomeViews(from, .))
 
+## Convert IRanges back to GRanges using metadata from Views.
+ir2gr <- function(ir, views) {
+    ir %>% shift(start(views) - 1) %>%
+         `names<-`(seqnames(views)) %>%
+         GRanges(seqinfo = seqinfo(views))
+}
+
 ## Get standard DNA bases from BSgenomeViews by masking off the
 ## non-standard bases and returning the resulting ranges.
 gr_masked <- function(views, motif = "N") {
     views %>% as("DNAStringSet") %>% sapply(mask, motif) %>%
-        as("RangesList") %>% shift(start(views) - 1) %>%
-        `names<-`(seqnames(views)) %>%
-        GRanges(seqinfo = seqinfo(views))
+        as("RangesList") %>% ir2gr(views)
 }
 
 stddna_from_views <- function(views) {
@@ -72,6 +77,25 @@ kmerize <- function(views, kmer = 36) {
     BSgenomeViews(subject(views), gr)
 }
 
+.range_hits <- function(xstring, pdict) {
+    matches <- matchPDict(pdict, xstring)
+    hits <- elementNROWS(matches) > 1
+    matches %>% as("CompressedIRangesList") %>% .[hits] %>%
+        unlist() %>% IRanges::reduce()
+}
+
+ranges_hits <- function(views, pdict, indices = NULL) {
+    if (is.null(indices)) indices <- 1:length(views)
+    views_sub <- views[indices]
+    irl <- lapply(views_sub, .range_hits, pdict) %>% List()
+    ## matchPDict() converted the BSgenomeViews into DNAStringSets,
+    ## and therefore the start offsets and seqinfo was lost.  We need
+    ## to readd that information using ir2gr() before combining all
+    ## the ranges.
+    lapply(seq_along(irl), function(i) ir2gr(irl[i], views_sub[i])) %>%
+        List() %>% unlist() %>% GenomicRanges::reduce()
+}
+
 ## FIXME yes, this function will be cleaned up.
 mappable <- function() {
     message(sprintf(
@@ -82,24 +106,21 @@ mappable <- function() {
     ## ## Sanity check - there should be some non-DNA bases
     ## alphabetFrequency(as(bsgenome, "Views"), baseOnly = TRUE)
     message(sprintf(
-        "[%6.2f sec] to subset to standard DNA bases in genome",
+        "[%6.2f sec] to subset to standard DNA bases in the genome",
         system.time(views <- stddna_from_genome(bsgenome))[3]))
     message(sprintf(
-        "[%6.2f sec] to chop up genome into 36-mers",
+        "[%6.2f sec] to chop up the genome into 36-mers",
         system.time(kmers <- kmerize(views))[3]))
     ## ## Sanity check - there should be no non-standard bases,
     ## ## otherwise pdict creation will fail.
     ## alphabetFrequency(kmers, baseOnly = TRUE) %>% colSums()
     ## ## There isn't really much one can do to speed up the PDict creation.
     message(sprintf(
-        "[%6.2f sec] to create search dictionary",
+        "[%6.2f sec] to create the search dictionary",
         system.time(pdict <- PDict(as(kmers[1:1000000],
                                       "DNAStringSet")))[3]))
-    ## This step is memory intensive.  Using even more than 1 CPU eats
-    ## all the RAM!  Might need to chop up the DNAStringSet into
-    ## smaller pieces.
+    ## Chop up the views into smaller pieces.
     message(sprintf(
-        "[%6.2f sec] to search genome",
-        system.time(hits <- lapply(as(views[1:10], "DNAStringSet"),
-                                   matchPDict, pdict = pdict))[3]))
+        "[%6.2f sec] to search the genome",
+        system.time(grs <- bplapply(1:10, ranges_hits, views, pdict))[3]))
 }
