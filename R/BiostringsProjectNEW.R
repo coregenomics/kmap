@@ -117,10 +117,17 @@ mappable <- function() {
     ## ## There isn't really much one can do to speed up the PDict creation.
     message(sprintf(
         "[%6.2f sec] to create the search dictionary",
-        system.time(pdict <- PDict(as(kmers[1:1000000],
+        system.time(pdict <- PDict(as(kmers,
                                       "DNAStringSet")))[3]))
     ## Chop up the views into smaller pieces.
     message(sprintf(
         "[%6.2f sec] to search the genome",
-        system.time(grs <- bplapply(1:10, ranges_hits, views, pdict))[3]))
+        system.time(gr <- bplapply(seq_along(views),
+                                   ranges_hits,
+                                   views = views,
+                                   pdict = pdict) %>%
+                        List() %>%
+                        unlist() %>%
+                        GenomicRanges::reduce())[3]))
+    gr
 }
