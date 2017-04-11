@@ -12,7 +12,7 @@ Description: Taking a BSgenome input, mappable regions are determined from base
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-Depends: R (>= 3.1.0)
+Depends: R (>= 3.3.0)
 Imports:
     BSgenome,
     BiocParallel,
