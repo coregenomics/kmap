@@ -97,12 +97,12 @@ ranges_hits <- function(views, pdict, indices = NULL) {
 }
 
 ## FIXME yes, this function will be cleaned up.
-mappable <- function() {
+mappable <- function(genome) {
     message(sprintf(
         "[%6.2f sec] to load the genome",
         system.time(
             bsgenome <-
-                BSgenome::getBSgenome("BSgenome.Ecoli.NCBI.20080805"))[3]))
+                BSgenome::getBSgenome(genome))[3]))
     ## ## Sanity check - there should be some non-DNA bases
     ## alphabetFrequency(as(bsgenome, "Views"), baseOnly = TRUE)
     message(sprintf(
