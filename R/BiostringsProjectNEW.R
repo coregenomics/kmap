@@ -137,13 +137,26 @@ kmerize <- function(views, kmer = 36) {
     BSgenomeViews(subject(views), gr)
 }
 
+#' Find hits of kmers along genome.
+#' 
+#' Compare \code{\link[Biostrings]{Xstring}} object with the
+#' dictionary of the kmerized genome, then vectorize across 
+#' 
+#' @param xstring The \code{\link[Biostrings]{Xstring}} 
+#' @param views The \code{\link[BSgenome]{BSgenomeViews}} with 
+#' \code{\link[GenomicRanges]
+#' @param pdict The \code{\link[Biostrings]{PDict}} dictionary .
+#' @return A \code{\link[IRanges]{CompressedIrangesList}} with no repeating hits.
+#' @return A \code{\link[GenomicRanges]{}} with no repeating hits.
+
+#' @rdname range
 range_hits <- function(xstring, pdict) {
     matches <- matchPDict(pdict, xstring)
     hits <- elementNROWS(matches) > 1
     matches %>% as("CompressedIRangesList") %>% .[hits] %>%
         unlist() %>% IRanges::reduce()
 }
-
+#' @rdname range
 ranges_hits <- function(views, pdict, indices = NULL) {
     if (is.null(indices)) indices <- 1:length(views)
     views_sub <- views[indices]
@@ -156,6 +169,21 @@ ranges_hits <- function(views, pdict, indices = NULL) {
 }
 
 ## FIXME yes, this function will be cleaned up.
+#' Return mappable regions.
+#' 
+#' @param genome The \code{\link[BSgenome]{BSgenome}} DNA to be subset.
+#' @param BPPARAM An optional \code{\link[BiocParallel]{BiocParallelParam}}
+#'     instance determining the parallel back-end to be used during evaluation,
+#'     or a \code{\link[base]{list}} of
+#'     \code{\link[BiocParallel]{BiocParallelParam}} instances, to be applied in
+#'     sequence for nested calls to \code{BiocParallel} functions.
+#' @return The \code{\link[GenomicRanges]{Granges}} of mappable DNA sequences.    
+#' @examples
+#' 
+#' \dontrun{
+#' mappable(BSgenome.Hsapiens.UCSC.hg38,
+#' }
+#'  
 #' @export
 mappable <- function(genome, BPPARAM = bpparam()) {
     message(sprintf(
