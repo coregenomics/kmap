@@ -2,6 +2,7 @@
 
 export(kmerize)
 export(mappable)
+exportMethods(coerce)
 importFrom(BSgenome,BSgenome)
 importFrom(BSgenome,BSgenomeViews)
 importFrom(BSgenome,elementNROWS)
@@ -29,4 +30,5 @@ importFrom(S4Vectors,"runLength<-")
 importFrom(S4Vectors,List)
 importFrom(magrittr,"%>%")
 importFrom(methods,as)
+importFrom(methods,coerce)
 importFrom(plyr,.)

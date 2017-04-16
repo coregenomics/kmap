@@ -29,6 +29,15 @@ setAs("BSgenome", "GRanges",
 setAs("BSgenome", "Views",
       function(from) as(from, "GRanges") %>% BSgenomeViews(from, .))
 
+## Export the above coercion methods as described in Bioconductor S4 Objects lab
+## exercise:
+## https://www.bioconductor.org/help/course-materials/2011/AdvancedRFeb2011Seattle/ImplementingS4Objects-lab.pdf
+## Here we use ROxygen tags to manage the NAMESPACE file for us instead of hand
+## editing the file as suggested by the aged exercise.
+#' @importFrom methods coerce
+#' @exportMethod coerce
+methods::coerce
+
 #' Subset to standard DNA bases
 #'
 #' Functions for subsetting to standard DNA for a BSgenome (or BSgenomeViews).
