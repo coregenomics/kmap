@@ -14,15 +14,12 @@ source("fixtures.R")
 ##     expect_is(kmerize(views, kmer), "Views")
 ## })
 test_that("kmerize returns ranges no wider than the kmer size", {
-    skip("Not completed yet")
-    result <- function() width(kmerize(views, kmer_))
-    result_vec <- function() rep(kmer_ + 1, length(result_))
-    kmer_ <- kmer
-    expect_lt(result(), result_vec())
+    kmer_ <- 10
+    expect_lte(width(kmerize(views, kmer_)) %>% max(), kmer_)
     kmer_ <- 100
-    expect_lt(result(), result_vec())
+    expect_lte(width(kmerize(views, kmer_)) %>% length() %>% max(), kmer_)
     kmer_ <- 1
-    expect_lt(result(), result_vec())
+    expect_lte(width(kmerize(views, kmer_)) %>% max(), kmer_)
 })
 
 ## Test negative value gives error

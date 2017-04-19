@@ -128,11 +128,14 @@ kmerize <- function(views, kmer = 36) {
     ## Ensure that end(views) >= start(views).  Drop rows where this
     ## is not the case.
     views <- views[width(views) > kmer]
+    if (NROW(views) == 0)
+        return(views)
     ## Optimize runtime by disabling USE.NAMES.
     starts <- mapply(seq,
                      start(views),
                      end(views) - kmer,
-                     USE.NAMES = FALSE)
+                     USE.NAMES = FALSE,
+                     SIMPLIFY = FALSE)
     gr_lengths <- seqnames(views) %>%
         as.data.frame() %>%
         dplyr::mutate(len = sapply(starts, length)) %>%
