@@ -3,18 +3,10 @@ source("fixtures.R")
 
 ## Function to test:
 ##   kmerize(views, kmer)
-## Input:
-##   BSgenomeViews
-##   Integer
-## Returns:
-##   Biostrings PDict object to run sequence queries.
-## Description:
-##   Chop up genome into fixed size to run sequence queries.
-## test_that("kmerize returns Views-class", {
-##     expect_is(kmerize(views, kmer), "Views")
-## })
+test_that("kmerize returns Views-class", {
+     expect_is(kmerize(views, kmer), "Views")
+})
 test_that("kmerize returns ranges no wider than the kmer size", {
-    skip("Not completed yet")
     result <- function() width(kmerize(views, kmer_))
     result_vec <- function() rep(kmer_ + 1, length(result_))
     kmer_ <- kmer
@@ -26,7 +18,19 @@ test_that("kmerize returns ranges no wider than the kmer size", {
 })
 
 ## Test negative value gives error
+test_that("negative value of kmer size", {
+    expect_error(kmerize(views, -1), "cannot have a negative kmer size")
+})
+
 ## Test zero value gives error
+test_that("zero value of kmer size", {
+    expect_error(kmerize(views, 0), "cannot have a zero value of kmer")
+})
+
 ## Test floating point gives error
 ## Test 1-2 kmer sizes
+test_that("")
+kmer_1 <- 19
+kmer
 ## Test option to trim to constant size
+
