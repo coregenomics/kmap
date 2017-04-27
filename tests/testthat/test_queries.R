@@ -14,21 +14,8 @@ test_that("kmerize returns ranges no wider than the kmer size", {
     kmer_ <- 1
     expect_lte(width(kmerize(views, kmer_)) %>% max(), kmer_)
 })
-
-## Test negative value gives error
-test_that("negative value of kmer size", {
-    expect_error(kmerize(views, -1), "cannot have a negative kmer size")
+test_that("kmerize throws error for invalid kmer size", {
+    expect_error(kmerize(views, -1), "kmer")
+    expect_error(kmerize(views, 0), "kmer")
+    expect_error(kmerize(views, 10.5), "kmer")
 })
-
-## Test zero value gives error
-test_that("zero value of kmer size", {
-    expect_error(kmerize(views, 0), "cannot have a zero value of kmer")
-})
-
-## Test floating point gives error
-## Test 1-2 kmer sizes
-test_that("")
-kmer_1 <- 19
-kmer
-## Test option to trim to constant size
-

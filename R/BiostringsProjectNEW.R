@@ -126,7 +126,12 @@ ir2gr <- function(ranges, views) {
 #'     Ranges smaller than the \code{kmer} are dropped.
 #' @export
 kmerize <- function(views, kmer = 36) {
-    gr <- slidingWindows(granges(views), 10) %>% unlist()
+    ## Validate inputs.
+    if (! is.numeric(kmer) | kmer %% 1 != 0)
+        stop(sQuote("kmer"), " must be an integer, not ", sQuote(kmer))
+    if (kmer < 1)
+        stop(sQuote("kmer"), " must be >= 1, not ", sQuote(kmer))
+    gr <- slidingWindows(granges(views), kmer) %>% unlist()
     BSgenomeViews(subject(views), gr)
 }
 
