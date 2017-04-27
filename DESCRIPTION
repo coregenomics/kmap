@@ -20,6 +20,7 @@ Imports:
     GenomeInfoDb,
     GenomicRanges,
     IRanges,
+    QuasR,
     S4Vectors,
     dplyr,
     magrittr,
