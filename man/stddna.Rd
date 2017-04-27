@@ -23,7 +23,7 @@ sequence for nested calls to \code{BiocParallel} functions.}
 }
 \value{
 A \code{BSgenomeViews} object with non-standard DNA bases (i.e. bases
-    not in \code{\link[BSgenome]{DNA_BASES}}) removed for
+    not in \code{\link[Biostrings]{DNA_BASES}}) removed for
     \code{\link{stddna_from_genome}}, and a \code{GRanges} object for
     \code{\link{stddna_from_views}}.
 }

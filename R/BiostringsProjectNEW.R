@@ -50,7 +50,7 @@ methods::coerce
 #'     \code{\link[BiocParallel]{BiocParallelParam}} instances, to be applied in
 #'     sequence for nested calls to \code{BiocParallel} functions.
 #' @return A \code{BSgenomeViews} object with non-standard DNA bases (i.e. bases
-#'     not in \code{\link[BSgenome]{DNA_BASES}}) removed for
+#'     not in \code{\link[Biostrings]{DNA_BASES}}) removed for
 #'     \code{\link{stddna_from_genome}}, and a \code{GRanges} object for
 #'     \code{\link{stddna_from_views}}.
 #' @name stddna
@@ -75,12 +75,12 @@ stddna_from_views <- function(views, BPPARAM = bpparam()) {
 
 #' Remove motifs from BSgenomeViews
 #'
-#' Filter out DNA motifs to create a \code{\link[GenomicRanges]{GRanges}}
+#' Filter out DNA motifs to create a \code{\link[GenomicRanges]{GRanges-class}}
 #' instance.
 #'
 #' @inheritParams stddna
 #' @param motif The motif to remove in the sequences.
-#' @return A \code{\link[GenomicRanges]{GRanges}} object with \code{motif}
+#' @return A \code{\link[GenomicRanges]{GRanges-class}} object with \code{motif}
 #'     sequences removed.
 gr_masked <- function(views, motif = "N") {
     views %>% as("DNAStringSet") %>% sapply(mask, motif) %>%
@@ -89,7 +89,7 @@ gr_masked <- function(views, motif = "N") {
 
 #' Convert IRanges back to GRanges using metadata from Views.
 #'
-#' We lose the \code{\link[GenomicRanges]{seqnames}} and
+#' We lose the \code{\link[GenomeInfoDb]{seqnames}} and
 #' \code{\link[GenomeInfoDb]{seqinfo}} metadata when transforming the underlying
 #' \code{\link[Biostrings]{DNAString}} of a
 #' \code{\link[BSgenome]{BSgenomeViews}} object into
@@ -120,43 +120,27 @@ ir2gr <- function(ranges, views) {
 #'
 #' @param views The \code{\link[BSgenome]{BSgenomeViews}} sequences to segment
 #'     into overlapping k-mers.
+#' @param kmer The size of overlapping segments.
 #' @return A \code{\link[BSgenome]{BSgenomeViews}} object with
-#'     \code{\link[GenomicRanges]{width}} exactly equal to \code{kmer} size.
+#'     \code{\link[IRanges]{width}} exactly equal to \code{kmer} size.
 #'     Ranges smaller than the \code{kmer} are dropped.
 #' @export
 kmerize <- function(views, kmer = 36) {
-    ## Ensure that end(views) >= start(views).  Drop rows where this
-    ## is not the case.
-    views <- views[width(views) > kmer]
-    ## Optimize runtime by disabling USE.NAMES.
-    starts <- mapply(seq,
-                     start(views),
-                     end(views) - kmer,
-                     USE.NAMES = FALSE)
-    gr_lengths <- seqnames(views) %>%
-        as.data.frame() %>%
-        dplyr::mutate(len = sapply(starts, length)) %>%
-        dplyr::group_by(value) %>%
-        dplyr::summarise(lengths = sum(len)) %>%
-        .$lengths
-    gr_seqnames <- seqnames(views) %>% `runLength<-`(gr_lengths)
-    gr <- GRanges(ranges = IRanges(start = starts %>% unlist(),
-                                   width = kmer),
-                  seqnames = gr_seqnames)
+    gr <- slidingWindows(granges(views), 10) %>% unlist()
     BSgenomeViews(subject(views), gr)
 }
 
 #' Find hits of kmers along genome.
 #' 
-#' Compare \code{\link[Biostrings]{Xstring}} object with the
+#' Compare \code{\link[Biostrings]{XString-class}} object with the
 #' dictionary of the kmerized genome, then vectorize across 
 #' 
-#' @param xstring The \code{\link[Biostrings]{Xstring}} 
-#' @param views The \code{\link[BSgenome]{BSgenomeViews}} with 
-#' \code{\link[GenomicRanges]
-#' @param pdict The \code{\link[Biostrings]{PDict}} dictionary .
-#' @return A \code{\link[IRanges]{CompressedIrangesList}} with no repeating hits.
-#' @return A \code{\link[GenomicRanges]{}} with no repeating hits.
+#' @param xstring The \code{\link[Biostrings]{XString-class}}
+#' @param views The \code{\link[BSgenome]{BSgenomeViews}}
+#' @param pdict The \code{\link[Biostrings]{PDict}} dictionary.
+#' @param indices Only operate on these indices of the \code{views}
+#' @return A \code{\link[IRanges]{CompressedNormalIRangesList-class}} with no repeating hits.
+#' @return A \code{\link[GenomicRanges]{GRanges-class}} with no repeating hits.
 
 #' @rdname range
 range_hits <- function(xstring, pdict) {
@@ -186,7 +170,7 @@ ranges_hits <- function(views, pdict, indices = NULL) {
 #'     or a \code{\link[base]{list}} of
 #'     \code{\link[BiocParallel]{BiocParallelParam}} instances, to be applied in
 #'     sequence for nested calls to \code{BiocParallel} functions.
-#' @return The \code{\link[GenomicRanges]{Granges}} of mappable DNA sequences.    
+#' @return The \code{\link[GenomicRanges]{GRanges-class}} of mappable DNA sequences.
 #' @examples
 #' 
 #' \dontrun{

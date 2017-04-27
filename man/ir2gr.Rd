@@ -15,7 +15,7 @@ ir2gr(ranges, views)
 GRanges
 }
 \description{
-We lose the \code{\link[GenomicRanges]{seqnames}} and
+We lose the \code{\link[GenomeInfoDb]{seqnames}} and
 \code{\link[GenomeInfoDb]{seqinfo}} metadata when transforming the underlying
 \code{\link[Biostrings]{DNAString}} of a
 \code{\link[BSgenome]{BSgenomeViews}} object into

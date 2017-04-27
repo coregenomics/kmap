@@ -9,10 +9,12 @@ kmerize(views, kmer = 36)
 \arguments{
 \item{views}{The \code{\link[BSgenome]{BSgenomeViews}} sequences to segment
 into overlapping k-mers.}
+
+\item{kmer}{The size of overlapping segments.}
 }
 \value{
 A \code{\link[BSgenome]{BSgenomeViews}} object with
-    \code{\link[GenomicRanges]{width}} exactly equal to \code{kmer} size.
+    \code{\link[IRanges]{width}} exactly equal to \code{kmer} size.
     Ranges smaller than the \code{kmer} are dropped.
 }
 \description{

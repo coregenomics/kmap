@@ -12,10 +12,10 @@ gr_masked(views, motif = "N")
 \item{motif}{The motif to remove in the sequences.}
 }
 \value{
-A \code{\link[GenomicRanges]{GRanges}} object with \code{motif}
+A \code{\link[GenomicRanges]{GRanges-class}} object with \code{motif}
     sequences removed.
 }
 \description{
-Filter out DNA motifs to create a \code{\link[GenomicRanges]{GRanges}}
+Filter out DNA motifs to create a \code{\link[GenomicRanges]{GRanges-class}}
 instance.
 }

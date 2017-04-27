@@ -3,8 +3,8 @@ source("fixtures.R")
 
 ## Function to test:
 ##   kmerize(views, kmer)
-test_that("kmerize returns Views-class", {
-     expect_is(kmerize(views, kmer), "Views")
+test_that("kmerize returns BSgenomeViews-class", {
+     expect_is(kmerize(views, kmer), "BSgenomeViews")
 })
 test_that("kmerize returns ranges no wider than the kmer size", {
     kmer_ <- 10
