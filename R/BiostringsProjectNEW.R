@@ -41,6 +41,11 @@ setAs("BSgenome", "Views",
 #' @exportMethod coerce
 methods::coerce
 
+## Re-export %>% to use in the the unittest suite, etc.
+#' @importFrom magrittr %>%
+#' @export
+magrittr::`%>%`
+
 #' Subset to standard DNA bases
 #'
 #' Functions for subsetting to standard DNA for a BSgenome (or BSgenomeViews).
