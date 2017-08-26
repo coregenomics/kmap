@@ -6,7 +6,7 @@
 #' @importFrom GenomeInfoDb seqinfo seqlengths
 #' @importFrom GenomicRanges GRanges end gaps reduce seqnames shift start width
 #' @importFrom IRanges IRanges
-#' @importFrom QuasR qAlign
+#' @importFrom QuasR alignments qAlign
 #' @importFrom S4Vectors List runLength<-
 #' @importFrom magrittr %>%
 #' @importFrom methods as
