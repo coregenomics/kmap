@@ -1,5 +1,4 @@
 context("Masking non-standard DNA bases")
-source("fixtures.R")
 
 ## Function to test:
 ##   stddna_from_views(bsgenomeviews)

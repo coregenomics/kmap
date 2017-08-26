@@ -1,5 +1,4 @@
 context("Generating query dictionary for mapping")
-source("fixtures.R")
 
 ## Function to test:
 ##   kmerize(views, kmer)

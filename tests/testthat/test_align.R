@@ -1,5 +1,4 @@
 context("Alignment")
-source("fixtures.R")
 
 ## Function to test:
 ##   align(views, genome)

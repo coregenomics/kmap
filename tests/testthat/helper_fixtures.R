@@ -1,3 +1,5 @@
+library(Biostrings)
+
 ## Biostring genome.  Generating a mock BSgenome relies on having many
 ## disk files, which is not a very practical fixture.  Therefore use
 ## the smallest existing genome with unknown bases.  This Ecoli has 3
