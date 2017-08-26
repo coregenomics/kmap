@@ -1,14 +1,12 @@
 context("Alignment")
 
-## Function to test:
-##   align(views, genome)
 test_that("align generates .fasta files", {
     ## We can't use the NCBI BSgenome name directly as the QuasR::qAlign genome
     ## parameter, because the NCBI metadata has NAs in the publication date
     ## which confuses QuasR.  As a workaround, resave the genome as a file.
     file_genome <- tempfile(pattern = "genome-", fileext = ".fasta")
     on.exit(unlink(file_genome))
-    ## Subset the genome using `head()` to speed up the calculation from several
+    ## Subset the genome using `head` to speed up the calculation from several
     ## minutes to tens of seconds.
     writeXStringSet(as(bsgenome, "Views") %>% as("XStringSet") %>%
                     setNames(names(bsgenome)) %>% endoapply(head, 100),

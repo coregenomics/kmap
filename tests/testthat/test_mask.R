@@ -1,14 +1,5 @@
 context("Masking non-standard DNA bases")
 
-## Function to test:
-##   stddna_from_views(bsgenomeviews)
-## Input:
-##   BSgenomeViews
-## Returns:
-##   GRanges of regions containing only standard DNA bases (namely,
-##   the DNA_BASES variable in the BSgenome packages)
-## Description:
-##   Create GRanges of standard DNA bases (A, C, G, T).
 test_that("stddna returns GRanges-class for Views", {
     expect_is(stddna_from_views(views), "GRanges")
 })

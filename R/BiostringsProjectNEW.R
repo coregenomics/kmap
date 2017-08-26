@@ -12,9 +12,9 @@
 #' @importFrom methods as
 #' @importFrom plyr .
 
-## The `setAs()` functions are intentionally not documented by themselves so as
-## to not clobber the base R `as()` help.  Bioconductor core packages typically
-## document `as()` alongside the class descriptions / constructors.  Here we're
+## The `setAs` functions are intentionally not documented by themselves so as
+## to not clobber the base R `as` help.  Bioconductor core packages typically
+## document `as` alongside the class descriptions oe constructors.  Here we're
 ## adding `BSgenome` conversions which might not be of interest to upstream.
 
 ## Allow BSgenome to be converted to GRanges object.
@@ -34,14 +34,14 @@ setAs("BSgenome", "Views",
 
 ## Export the above coercion methods as described in Bioconductor S4 Objects lab
 ## exercise:
-## https://www.bioconductor.org/help/course-materials/2011/AdvancedRFeb2011Seattle/ImplementingS4Objects-lab.pdf
+## https://www.bioconductor.org/help/course-materials/2011/AdvancedRFeb2011Seattle/ImplementingS4Objects-lab.pdf # nolint
 ## Here we use ROxygen tags to manage the NAMESPACE file for us instead of hand
 ## editing the file as suggested by the aged exercise.
 #' @importFrom methods coerce
 #' @exportMethod coerce
 methods::coerce
 
-## Re-export %>% to use in the the unittest suite, etc.
+## Reexport to use in the the unittest suite, etc.
 #' @importFrom magrittr %>%
 #' @export
 magrittr::`%>%`
@@ -167,9 +167,9 @@ ranges_hits <- function(views, pdict, indices = NULL) {
     if (is.null(indices)) indices <- 1:length(views)
     views_sub <- views[indices]
     irl <- lapply(views_sub, range_hits, pdict) %>% List()
-    ## matchPDict() converted the BSgenomeViews into DNAStringSets, and
+    ## matchPDict converted the BSgenomeViews into DNAStringSets, and
     ## therefore the start offsets and seqinfo was lost.  We need to readd that
-    ## information using ir2gr() before combining all the ranges.
+    ## information using ir2gr before combining all the ranges.
     lapply(seq_along(irl), function(i) ir2gr(irl[i], views_sub[i])) %>%
         List() %>% unlist() %>% GenomicRanges::reduce()
 }
@@ -224,18 +224,13 @@ mappable <- function(genome, BPPARAM = bpparam()) {
         system.time(
             bsgenome <-
                 BSgenome::getBSgenome(genome))[3]))
-    ## ## Sanity check - there should be some non-DNA bases
-    ## alphabetFrequency(as(bsgenome, "Views"), baseOnly = TRUE)
     message(sprintf(
         "[%6.2f sec] to subset to standard DNA bases in the genome",
         system.time(views <- stddna_from_genome(bsgenome, BPPARAM))[3]))
     message(sprintf(
         "[%6.2f sec] to chop up the genome into 36-mers",
         system.time(kmers <- kmerize(views))[3]))
-    ## ## Sanity check - there should be no non-standard bases,
-    ## ## otherwise pdict creation will fail.
-    ## alphabetFrequency(kmers, baseOnly = TRUE) %>% colSums()
-    ## ## There isn't really much one can do to speed up the PDict creation.
+    ## There isn't really much one can do to speed up the PDict creation.
     message(sprintf(
         "[%6.2f sec] to create the search dictionary",
         system.time(pdict <- PDict(as(kmers,

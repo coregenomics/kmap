@@ -1,11 +1,11 @@
 ## Biostring genome.  Generating a mock BSgenome relies on having many
 ## disk files, which is not a very practical fixture.  Therefore use
 ## the smallest existing genome with unknown bases.  This Ecoli has 3
-## chromosomes with non-standard bases: NC008563, NC_004431, NC_002655
+## chromosomes with non standard bases: NC008563, NC_004431, NC_002655
 genome <- "BSgenome.Ecoli.NCBI.20080805"
 bsgenome <- BSgenome::getBSgenome(genome)
 ## BSgenomeView.  Using a simpler DNAString fixture is limited
-## because it does not have a seqnames() accessor.
+## because it does not have a seqnames accessor.
 .seqname <- "NC_002655"
 .width <- 20
 .region_std <- 1
@@ -26,7 +26,7 @@ bsgenome <- BSgenome::getBSgenome(genome)
 views <- BSgenome::Views(bsgenome, .gr)
 views
 
-## GRanges corresponding to view with no non-standard bases.
+## GRanges corresponding to view with no non standard bases.
 .dnas <- Biostrings::DNAStringSet(views) %>% as.character()
 ## Slow, but reliable way of checking for standard bases.
 .dna_ir <- function(dna_str) {

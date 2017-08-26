@@ -27,6 +27,7 @@ Imports:
     methods,
     plyr,
 Suggests:
+    lintr,
     testthat,
     BSgenome.Ecoli.NCBI.20080805,
     BSgenome.Scerevisiae.UCSC.sacCer2,

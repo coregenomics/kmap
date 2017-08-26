@@ -1,7 +1,5 @@
 context("Generating query dictionary for mapping")
 
-## Function to test:
-##   kmerize(views, kmer)
 test_that("kmerize returns BSgenomeViews-class", {
      expect_is(kmerize(views, kmer), "BSgenomeViews")
 })
