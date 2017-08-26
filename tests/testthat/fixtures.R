@@ -2,8 +2,8 @@
 ## disk files, which is not a very practical fixture.  Therefore use
 ## the smallest existing genome with unknown bases.  This Ecoli has 3
 ## chromosomes with non-standard bases: NC008563, NC_004431, NC_002655
-bsgenome <- BSgenome::getBSgenome("BSgenome.Ecoli.NCBI.20080805")
-
+genome <- "BSgenome.Ecoli.NCBI.20080805"
+bsgenome <- BSgenome::getBSgenome(genome)
 ## BSgenomeView.  Using a simpler DNAString fixture is limited
 ## because it does not have a seqnames() accessor.
 .seqname <- "NC_002655"

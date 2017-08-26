@@ -1,9 +1,12 @@
 #' @importFrom BSgenome BSgenome BSgenomeViews subject elementNROWS
 #' @importFrom BiocParallel bplapply bpparam
-#' @importFrom Biostrings DNAStringSet DNA_ALPHABET DNA_BASES PDict matchPDict mask
+#' @importFrom Biostrings DNAStringSet DNA_ALPHABET DNA_BASES PDict
+#'     writeXStringSet matchPDict mask
+#' @importFrom GenomicAlignments readGAlignments
 #' @importFrom GenomeInfoDb seqinfo seqlengths
 #' @importFrom GenomicRanges GRanges end gaps reduce seqnames shift start width
 #' @importFrom IRanges IRanges
+#' @importFrom QuasR qAlign
 #' @importFrom S4Vectors List runLength<-
 #' @importFrom magrittr %>%
 #' @importFrom methods as
@@ -164,6 +167,33 @@ ranges_hits <- function(views, pdict, indices = NULL) {
     ## information using ir2gr() before combining all the ranges.
     lapply(seq_along(irl), function(i) ir2gr(irl[i], views_sub[i])) %>%
         List() %>% unlist() %>% GenomicRanges::reduce()
+}
+
+#' Return GRanges of uniquely mapping hits.
+#'
+#' @param views The \code{\link[BSgenome]{BSgenomeViews}} DNA to mapped.
+#' @param genome The \code{\link[BSgenome]{BSgenome}} DNA to search for hits.
+#' @param BPPARAM An optional \code{\link[BiocParallel]{BiocParallelParam}}
+#'     instance determining the parallel back-end to be used during evaluation,
+#'     or a \code{\link[base]{list}} of
+#'     \code{\link[BiocParallel]{BiocParallelParam}} instances, to be applied in
+#'     sequence for nested calls to \code{BiocParallel} functions.
+#' @return The \code{\link[GenomicRanges]{GRanges-class}} of mappable DNA sequences.
+align <- function(views, genome = NULL, ...) {
+    if (is.null(genome))
+        genome <- subject(views)@pkgname
+    file_fasta <- tempfile("views-", fileext = ".fasta")
+    file_sample <- tempfile("sample-", fileext = ".txt")
+    on.exit(unlink(c(file_fasta, file_sample)))
+    writeXStringSet(as(views, "XStringSet") %>% unique(), file_fasta)
+    write.table(data.frame(FileName = file_fasta,
+                           SampleName = "kmers"), file_sample, sep = "\t",
+                row.names = FALSE, quote = FALSE)
+    ## Align!
+    proj <- qAlign(file_sample, genome, ...)
+    alignments(proj)[[1]]$FileName %>% readGAlignments() %>%
+        `seqinfo<-`(value = seqinfo(views)) %>% `strand<-`(value = "*") %>%
+        as("GRanges")
 }
 
 ## FIXME yes, this function will be cleaned up.
