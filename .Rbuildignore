@@ -1,0 +1,5 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.dir-locals\.el$
+^\.lintr$
+^\.travis.yml$
