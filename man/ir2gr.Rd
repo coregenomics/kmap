@@ -25,12 +25,17 @@ convert \code{\link[IRanges]{IRanges}} to
 \code{\link[GenomicRanges]{GRanges}}.
 }
 \examples{
+## This example finds GRanges not containing the DNA base "T"
+## in a section of the Ecoli genome.
 bsgenome <- BSgenome::getBSgenome("BSgenome.Ecoli.NCBI.20080805")
 views <- BSgenomeViews(bsgenome, GRanges("AC_000091:11-20"))
 views
 remaining <- mask(views[[1]], "T")
 ir <- as(remaining, "IRanges")
 ir
+## ir now has more rows than views after being split by `mask`.
+## Duplicate the rows to match.
+views <- rep(views, length.out = length(ir))
 ## Convert IRanges to GRanges
-ir2gr(ir, views)
+kmap:::ir2gr(ir, views)
 }

@@ -3,9 +3,9 @@
 \docType{import}
 \name{reexports}
 \alias{reexports}
-\alias{coerce}
-\alias{reexports}
 \alias{\%>\%}
+\alias{reexports}
+\alias{coerce}
 \title{Objects exported from other packages}
 \keyword{internal}
 \description{

@@ -1,6 +1,6 @@
 Package: kmap
 Type: Package
-Title: Generate mappable regions of the genome for a given K-mer length.
+Title: Generate mappable regions of the genome for a given K-mer length
 Version: 0.1.0
 Author: Deivydas Giedrimas, Pariksheet Nanda
 Maintainer: Deivydas Giedrimas <giedrimd@gmail.com>
@@ -18,11 +18,11 @@ Imports:
     BiocParallel,
     Biostrings,
     GenomeInfoDb,
+    GenomicAlignments,
     GenomicRanges,
     IRanges,
     QuasR,
     S4Vectors,
-    dplyr,
     magrittr,
     methods,
     plyr,

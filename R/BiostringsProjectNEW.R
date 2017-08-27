@@ -3,21 +3,42 @@
 #' @importFrom Biostrings DNAStringSet DNA_ALPHABET DNA_BASES PDict
 #'     writeXStringSet matchPDict mask
 #' @importFrom GenomicAlignments readGAlignments
-#' @importFrom GenomeInfoDb seqinfo seqlengths
-#' @importFrom GenomicRanges GRanges end gaps reduce seqnames shift start width
+#' @importFrom GenomeInfoDb seqinfo seqinfo<- seqlengths
+#' @importFrom GenomicRanges GRanges granges end gaps reduce seqnames shift
+#'     slidingWindows start strand<- width
 #' @importFrom IRanges IRanges
 #' @importFrom QuasR alignments qAlign
 #' @importFrom S4Vectors List runLength<-
 #' @importFrom magrittr %>%
 #' @importFrom methods as
 #' @importFrom plyr .
+#' @importFrom utils write.table
+NULL
 
-## The `setAs` functions are intentionally not documented by themselves so as
-## to not clobber the base R `as` help.  Bioconductor core packages typically
-## document `as` alongside the class descriptions oe constructors.  Here we're
-## adding `BSgenome` conversions which might not be of interest to upstream.
+## Reexport to use in the the unittest suite, etc.
+#' @importFrom magrittr %>%
+#' @export
+magrittr::`%>%`
 
-## Allow BSgenome to be converted to GRanges object.
+## Export the `setAs` coercion methods below as described in Bioconductor S4 Objects
+## lab exercise:
+## https://www.bioconductor.org/help/course-materials/2011/AdvancedRFeb2011Seattle/ImplementingS4Objects-lab.pdf # nolint
+## Here we use ROxygen tags to manage the NAMESPACE file for us instead of hand
+## editing the file as suggested by the above aged exercise.  The `setAs`
+## functions themselves are intentionally not documented so as to not clobber
+## the base R `as` help.  This creates the following check warning:
+##
+##   Undocumented S4 methods:
+##     generic 'coerce' and siglist 'BSgenome,GRanges'
+##     generic 'coerce' and siglist 'BSgenome,Views'
+##   All user-level objects in a package (including S4 classes and methods)
+##
+## Bioconductor core packages document `as` alongside the class descriptions or
+## constructors, so these coercion functions should be upstreamed.
+#' @importFrom methods coerce
+#' @exportMethod coerce
+methods::coerce
+## Allow BSgenome to be converted to GRanges and Views object.
 setAs("BSgenome", "GRanges",
       function(from) {
           GenomicRanges::makeGRangesFromDataFrame(
@@ -27,24 +48,9 @@ setAs("BSgenome", "GRanges",
               ignore.strand = TRUE) %>%
               `names<-`(NULL)
       })
-
 ## Allow BSgenome to be converted to Views via GRanges.
 setAs("BSgenome", "Views",
       function(from) as(from, "GRanges") %>% BSgenomeViews(from, .))
-
-## Export the above coercion methods as described in Bioconductor S4 Objects lab
-## exercise:
-## https://www.bioconductor.org/help/course-materials/2011/AdvancedRFeb2011Seattle/ImplementingS4Objects-lab.pdf # nolint
-## Here we use ROxygen tags to manage the NAMESPACE file for us instead of hand
-## editing the file as suggested by the aged exercise.
-#' @importFrom methods coerce
-#' @exportMethod coerce
-methods::coerce
-
-## Reexport to use in the the unittest suite, etc.
-#' @importFrom magrittr %>%
-#' @export
-magrittr::`%>%`
 
 #' Subset to standard DNA bases
 #'
@@ -110,18 +116,27 @@ gr_masked <- function(views, motif = "N") {
 #' @param ranges IRanges
 #' @return GRanges
 #' @examples
+#' ## This example finds GRanges not containing the DNA base "T"
+#' ## in a section of the Ecoli genome.
 #' bsgenome <- BSgenome::getBSgenome("BSgenome.Ecoli.NCBI.20080805")
 #' views <- BSgenomeViews(bsgenome, GRanges("AC_000091:11-20"))
 #' views
 #' remaining <- mask(views[[1]], "T")
 #' ir <- as(remaining, "IRanges")
 #' ir
+#' ## ir now has more rows than views after being split by `mask`.
+#' ## Duplicate the rows to match.
+#' views <- rep(views, length.out = length(ir))
 #' ## Convert IRanges to GRanges
-#' ir2gr(ir, views)
+#' kmap:::ir2gr(ir, views)
 ir2gr <- function(ranges, views) {
+    if (NROW(ranges) != NROW(views))
+        stop("Length of IRanges must match Views")
+    if (class(ranges) != "RangesList")
+        ranges <- as(ranges, "RangesList")
     ranges %>% shift(start(views) - 1) %>%
-         `names<-`(seqnames(views)) %>%
-         GRanges(seqinfo = seqinfo(views))
+        `names<-`(seqnames(views)) %>%
+        GRanges(seqinfo = seqinfo(views))
 }
 
 #' Chop up BSgenomeViews into overlapping k-mers.
@@ -178,12 +193,8 @@ ranges_hits <- function(views, pdict, indices = NULL) {
 #'
 #' @param views The \code{\link[BSgenome]{BSgenomeViews}} DNA to mapped.
 #' @param genome The \code{\link[BSgenome]{BSgenome}} DNA to search for hits.
-#' @param BPPARAM An optional \code{\link[BiocParallel]{BiocParallelParam}}
-#'     instance determining the parallel back-end to be used during evaluation,
-#'     or a \code{\link[base]{list}} of
-#'     \code{\link[BiocParallel]{BiocParallelParam}} instances, to be applied in
-#'     sequence for nested calls to \code{BiocParallel} functions.
-#' @return The \code{\link[GenomicRanges]{GRanges-class}} of mappable DNA sequences.
+#' @param ... Extra arguments passed on to \code{\link[QuasR]{qAlign}}.
+#' @return The \code{\link[GenomicRanges]{GRanges-class}} of uniquely mapping DNA sequences.
 align <- function(views, genome = NULL, ...) {
     if (is.null(genome))
         genome <- subject(views)@pkgname
