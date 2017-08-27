@@ -31,7 +31,7 @@ magrittr::`%>%`
 ##   Undocumented S4 methods:
 ##     generic 'coerce' and siglist 'BSgenome,GRanges'
 ##     generic 'coerce' and siglist 'BSgenome,Views'
-##   All user-level objects in a package (including S4 classes and methods)
+##   All user level objects in a package (including S4 classes and methods)
 ##
 ## Bioconductor core packages document `as` alongside the class descriptions or
 ## constructors, so these coercion functions should be upstreamed.
