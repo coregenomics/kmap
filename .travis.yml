@@ -9,3 +9,4 @@ after_success:
   - Rscript -e 'covr::codecov()'
 env:
   - LINTR_COMMENT_BOT=false
+warnings_are_errors: false
