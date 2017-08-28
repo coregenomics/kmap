@@ -1,5 +1,8 @@
 # kmap
 
+[![Build Status](https://travis-ci.org/coregenomics/kmap.svg?branch=master)](https://travis-ci.org/coregenomics/kmap)
+[![codecov.io](https://codecov.io/gh/coregenomics/kmap/branch/master/graphs/badge.svg)](https://codecov.io/gh/coregenomics/kmap)
+
 Generate mappable regions of the genome for a given K-mer length.
 
 Knowing where reads can uniquely map in the genome
