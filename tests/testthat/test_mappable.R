@@ -4,8 +4,8 @@ context("Test mappable")
 genome <- "BSgenome.Scerevisiae.UCSC.sacCer2"
 path_cache <- tempdir()
 clear_cache <- function() {
-    unlink(path_cache, recursive = TRUE)
-    dir.create(path_cache)
+    unlink(tempdir(), recursive = TRUE)
+    dir.create(tempdir())
 }
 
 test_that("mappable loads GRanges from the the file cache", {
