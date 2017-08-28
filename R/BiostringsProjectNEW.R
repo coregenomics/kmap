@@ -276,24 +276,19 @@ timeit <- function(msg, code) {
 #'     sequence for nested calls to \code{BiocParallel} functions.
 #' @return The \code{\link[GenomicRanges]{GRanges-class}} of mappable DNA sequences.
 #' @examples
-#' 
 #' \dontrun{
-#' mappable("BSgenome.Hsapiens.UCSC.hg38")
+#' mappable("BSgenome.Scerevisiae.UCSC.sacCer2")
 #' }
 #'  
 #' @export
 mappable <- function(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE) {
-    timeit("Loading the genome", {
-        bsgenome <- BSgenome::getBSgenome(genome)
-    })
-    timeit("Subsetting to standard DNA bases", {
-        views <- stddna_from_genome(bsgenome, BPPARAM)
-    })
-    timeit("Chop up the genome into k-mers", {
-        kmers <- kmerize(views, kmer = kmer)
-    })
-    timeit("Search the genome for unique k-mer alignments", {
-        gr <- align(views, genome)
-    })
+    timeit(sprintf("Loading the %s genome", genome),
+           bsgenome <- BSgenome::getBSgenome(genome))
+    timeit(sprintf("Removing non-standard DNA bases and chopping into %d-mers",
+                   kmer),
+           views <- stddna_from_genome(bsgenome, BPPARAM) %>%
+               kmerize(kmer = kmer))
+    timeit(sprintf("Search the genome for unique %d-mer alignments", kmer),
+           gr <- align(views, genome))
     gr %>% GenomicRanges::reduce()
 }

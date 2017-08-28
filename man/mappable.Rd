@@ -26,9 +26,8 @@ The \code{\link[GenomicRanges]{GRanges-class}} of mappable DNA sequences.
 Return mappable regions of a genome.
 }
 \examples{
-
 \dontrun{
-mappable("BSgenome.Hsapiens.UCSC.hg38")
+mappable("BSgenome.Scerevisiae.UCSC.sacCer2")
 }
  
 }
