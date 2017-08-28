@@ -1,4 +1,5 @@
 #' @importFrom BSgenome BSgenome BSgenomeViews subject
+#' @importFrom BiocFileCache BiocFileCache bfccount bfcnew bfcquery bfcrpath
 #' @importFrom BiocParallel bplapply bpparam
 #' @importFrom Biostrings DNAStringSet DNA_ALPHABET DNA_BASES writeXStringSet
 #'     mask
@@ -245,6 +246,9 @@ timeit <- function(msg, code) {
 #' @inheritParams stddna
 #' @param genome The \code{\link[BSgenome]{BSgenome}} DNA to be subset.
 #' @param verbose Print the calculation steps and their elapsed time.
+#' @param cache_path Path to initialize
+#'     \code{\link[BiocFileCache]{BiocFileCache}} object at a non-default path
+#'     storage location.
 #' @return The \code{\link[GenomicRanges]{GRanges-class}} of mappable DNA sequences.
 #' @examples
 #' \dontrun{
@@ -252,7 +256,26 @@ timeit <- function(msg, code) {
 #' }
 #'  
 #' @export
-mappable <- function(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE) {
+mappable <- function(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE,
+                     cache_path = NULL) {
+    ## Return the cached mappable object if it already exists.
+    bfc <- BiocFileCache(cache_path)
+    name <- paste("kmap", kmer, genome, sep = "_")
+    query <- bfcquery(bfc, name)
+    if (bfccount(query) == 1) {
+        path <- bfcrpath(bfc, name)
+        timeit(sprintf("Reading the cached mappable genome %s", genome), {
+            gr <- rtracklayer::import(path)
+            ## GFF3 does not serialize seqinfo.
+            bsgenome <- BSgenome::getBSgenome(genome)
+            seqinfo(gr) <- seqinfo(bsgenome)
+        })
+        return(gr)
+    } else if (bfccount(query) > 1) {
+        stop(sprintf("Found more than 1 cached file for %d-mer genome %s",
+                     kmer, genome))
+    }
+    ## No cached object available, so calculate mappable GRanges.
     timeit(sprintf("Loading the %s genome", genome),
            bsgenome <- BSgenome::getBSgenome(genome))
     timeit(sprintf("Removing non-standard DNA bases and chopping into %d-mers",
@@ -260,6 +283,10 @@ mappable <- function(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE) {
            views <- stddna_from_genome(bsgenome, BPPARAM) %>%
                kmerize(kmer = kmer))
     timeit(sprintf("Search the genome for unique %d-mer alignments", kmer),
-           gr <- align(views, genome, BPPARAM))
-    gr %>% reduce()
+           gr <- align(views, genome, BPPARAM) %>% reduce())
+    ## Suppress warnings from BiocFileCache :/
+    path <- suppressWarnings(bfcnew(bfc, name, ext = ".gff3"))
+    timeit(sprintf("Saving result to cache %s", path),
+           rtracklayer::export.gff3(gr, path))
+    gr
 }

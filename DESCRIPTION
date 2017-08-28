@@ -15,6 +15,7 @@ LazyData: true
 Depends: R (>= 3.3.0)
 Imports:
     BSgenome,
+    BiocFileCache,
     BiocParallel,
     Biostrings,
     GenomeInfoDb,
@@ -26,6 +27,7 @@ Imports:
     magrittr,
     methods,
     plyr,
+    rtracklayer,
 Suggests:
     lintr,
     lubridate,

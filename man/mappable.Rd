@@ -4,7 +4,8 @@
 \alias{mappable}
 \title{Return mappable regions of a genome.}
 \usage{
-mappable(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE)
+mappable(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE,
+  cache_path = NULL)
 }
 \arguments{
 \item{genome}{The \code{\link[BSgenome]{BSgenome}} DNA to be subset.}
@@ -18,6 +19,10 @@ or a \code{\link[base]{list}} of
 sequence for nested calls to \code{BiocParallel} functions.}
 
 \item{verbose}{Print the calculation steps and their elapsed time.}
+
+\item{cache_path}{Path to initialize
+\code{\link[BiocFileCache]{BiocFileCache}} object at a non-default path
+storage location.}
 }
 \value{
 The \code{\link[GenomicRanges]{GRanges-class}} of mappable DNA sequences.
