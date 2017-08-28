@@ -147,7 +147,6 @@ ir2gr <- function(ranges, views) {
 #' @return A \code{\link[BSgenome]{BSgenomeViews}} object with
 #'     \code{\link[IRanges]{width}} exactly equal to \code{kmer} size.
 #'     Ranges smaller than the \code{kmer} are dropped.
-#' @export
 kmerize <- function(views, kmer = 36) {
     ## Validate inputs.
     if (! is.numeric(kmer) | kmer %% 1 != 0)
