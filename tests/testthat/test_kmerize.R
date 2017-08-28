@@ -1,4 +1,4 @@
-context("Generating query dictionary for mapping")
+context("Chopping views into k-mers")
 
 test_that("kmerize returns BSgenomeViews-class", {
      expect_is(kmerize(views, kmer), "BSgenomeViews")

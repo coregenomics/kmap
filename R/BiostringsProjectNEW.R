@@ -1,14 +1,14 @@
-#' @importFrom BSgenome BSgenome BSgenomeViews subject elementNROWS
+#' @importFrom BSgenome BSgenome BSgenomeViews subject
 #' @importFrom BiocParallel bplapply bpparam
-#' @importFrom Biostrings DNAStringSet DNA_ALPHABET DNA_BASES PDict
-#'     writeXStringSet matchPDict mask
+#' @importFrom Biostrings DNAStringSet DNA_ALPHABET DNA_BASES writeXStringSet
+#'     mask
 #' @importFrom GenomicAlignments readGAlignments
 #' @importFrom GenomeInfoDb seqinfo seqinfo<- seqlengths
 #' @importFrom GenomicRanges GRanges granges end gaps reduce seqnames shift
-#'     slidingWindows start strand<- width
+#'     slidingWindows start strand<-
 #' @importFrom IRanges IRanges
 #' @importFrom QuasR alignments qAlign
-#' @importFrom S4Vectors List runLength<-
+#' @importFrom S4Vectors List
 #' @importFrom magrittr %>%
 #' @importFrom methods as
 #' @importFrom plyr .
@@ -157,37 +157,6 @@ kmerize <- function(views, kmer = 36) {
     BSgenomeViews(subject(views), gr)
 }
 
-#' Find hits of kmers along genome.
-#' 
-#' Compare \code{\link[Biostrings]{XString-class}} object with the
-#' dictionary of the kmerized genome, then vectorize across 
-#' 
-#' @param xstring The \code{\link[Biostrings]{XString-class}}
-#' @param views The \code{\link[BSgenome]{BSgenomeViews}}
-#' @param pdict The \code{\link[Biostrings]{PDict}} dictionary.
-#' @param indices Only operate on these indices of the \code{views}
-#' @return A \code{\link[IRanges]{CompressedNormalIRangesList-class}} with no repeating hits.
-#' @return A \code{\link[GenomicRanges]{GRanges-class}} with no repeating hits.
-
-#' @rdname range
-range_hits <- function(xstring, pdict) {
-    matches <- matchPDict(pdict, xstring)
-    hits <- elementNROWS(matches) > 1
-    matches %>% as("CompressedIRangesList") %>% .[hits] %>%
-        unlist() %>% IRanges::reduce()
-}
-#' @rdname range
-ranges_hits <- function(views, pdict, indices = NULL) {
-    if (is.null(indices)) indices <- 1:length(views)
-    views_sub <- views[indices]
-    irl <- lapply(views_sub, range_hits, pdict) %>% List()
-    ## matchPDict converted the BSgenomeViews into DNAStringSets, and
-    ## therefore the start offsets and seqinfo was lost.  We need to readd that
-    ## information using ir2gr before combining all the ranges.
-    lapply(seq_along(irl), function(i) ir2gr(irl[i], views_sub[i])) %>%
-        List() %>% unlist() %>% GenomicRanges::reduce()
-}
-
 #' Return GRanges of uniquely mapping hits.
 #'
 #' @param views The \code{\link[BSgenome]{BSgenomeViews}} DNA to mapped.
@@ -290,5 +259,5 @@ mappable <- function(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE) {
                kmerize(kmer = kmer))
     timeit(sprintf("Search the genome for unique %d-mer alignments", kmer),
            gr <- align(views, genome))
-    gr %>% GenomicRanges::reduce()
+    gr %>% reduce()
 }
