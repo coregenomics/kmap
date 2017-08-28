@@ -8,7 +8,7 @@ Sys.setenv("R_TESTS" = "")
 ## BiocParallel multicore fails:
 ## https://github.com/travis-ci/travis-ci/issues/7052 # nolint
 BiocParallel:: register(BiocParallel::SerialParam())
-## Don't treat warnings as errors, because 2 warnings are non-trivial to fix.
+## Don't treat warnings as errors, because 2 warnings are non trivial to fix.
 options(warn = 1)
 
 library(testthat)
