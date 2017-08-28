@@ -17,7 +17,7 @@ or a \code{\link[base]{list}} of
 \code{\link[BiocParallel]{BiocParallelParam}} instances, to be applied in
 sequence for nested calls to \code{BiocParallel} functions.}
 
-\item{verbose}{Describe the calculation steps with time.}
+\item{verbose}{Print the calculation steps and their elapsed time.}
 }
 \value{
 The \code{\link[GenomicRanges]{GRanges-class}} of mappable DNA sequences.

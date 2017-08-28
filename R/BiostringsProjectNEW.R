@@ -159,22 +159,28 @@ kmerize <- function(views, kmer = 36) {
 
 #' Return GRanges of uniquely mapping hits.
 #'
-#' @param views The \code{\link[BSgenome]{BSgenomeViews}} DNA to mapped.
+#' @inheritParams stddna
+#' @param views The \code{\link[BSgenome]{BSgenomeViews}} DNA to be mapped.
 #' @param genome The \code{\link[BSgenome]{BSgenome}} DNA to search for hits.
 #' @param ... Extra arguments passed on to \code{\link[QuasR]{qAlign}}.
 #' @return The \code{\link[GenomicRanges]{GRanges-class}} of uniquely mapping DNA sequences.
-align <- function(views, genome = NULL, ...) {
+align <- function(views, genome = NULL, BPPARAM = bpparam(), ...) {
     if (is.null(genome))
         genome <- subject(views)@pkgname
+    ## QuasR does not yet support BiocParallel.
+    cluster <- parallel::makeCluster(BPPARAM$workers)
     file_fasta <- tempfile("views-", fileext = ".fasta")
     file_sample <- tempfile("sample-", fileext = ".txt")
-    on.exit(unlink(c(file_fasta, file_sample)))
+    on.exit({
+        unlink(c(file_fasta, file_sample))
+        parallel::stopCluster(cluster)
+    })
     writeXStringSet(as(views, "XStringSet") %>% unique(), file_fasta)
     write.table(data.frame(FileName = file_fasta,
                            SampleName = "kmers"), file_sample, sep = "\t",
                 row.names = FALSE, quote = FALSE)
     ## Align!
-    proj <- qAlign(file_sample, genome, ...)
+    proj <- qAlign(file_sample, genome, clObj = cluster, ...)
     alignments(proj)[[1]]$FileName %>% readGAlignments() %>%
         `seqinfo<-`(value = seqinfo(views)) %>% `strand<-`(value = "*") %>%
         as("GRanges")
@@ -236,13 +242,9 @@ timeit <- function(msg, code) {
 #' Return mappable regions of a genome.
 #'
 #' @inheritParams kmerize
+#' @inheritParams stddna
 #' @param genome The \code{\link[BSgenome]{BSgenome}} DNA to be subset.
-#' @param verbose Describe the calculation steps with time.
-#' @param BPPARAM An optional \code{\link[BiocParallel]{BiocParallelParam}}
-#'     instance determining the parallel back-end to be used during evaluation,
-#'     or a \code{\link[base]{list}} of
-#'     \code{\link[BiocParallel]{BiocParallelParam}} instances, to be applied in
-#'     sequence for nested calls to \code{BiocParallel} functions.
+#' @param verbose Print the calculation steps and their elapsed time.
 #' @return The \code{\link[GenomicRanges]{GRanges-class}} of mappable DNA sequences.
 #' @examples
 #' \dontrun{
@@ -258,6 +260,6 @@ mappable <- function(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE) {
            views <- stddna_from_genome(bsgenome, BPPARAM) %>%
                kmerize(kmer = kmer))
     timeit(sprintf("Search the genome for unique %d-mer alignments", kmer),
-           gr <- align(views, genome))
+           gr <- align(views, genome, BPPARAM))
     gr %>% reduce()
 }
