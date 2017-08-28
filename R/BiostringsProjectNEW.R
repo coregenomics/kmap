@@ -212,10 +212,64 @@ align <- function(views, genome = NULL, ...) {
         as("GRanges")
 }
 
-## FIXME yes, this function will be cleaned up.
-#' Return mappable regions.
+#' Run code with message and timing information.
+#'
+#' Only print messages if the magic variable \code{verbose} is set in the
+#' environment from where \code{timeit} was called.
+#'
+#' @param msg Message describing the code block being run.
+#' @param code Block of code to evaluate and time.  Enclose in curly braces for
+#'     multiple lines.
+#' @return Invisibly returns evaluation time taken.
+#' @examples
+#' ## Use timeit directly inside a script
+#' verbose <- TRUE
+#' timeit("My long calculation", Sys.sleep(0.5))
+#' ## Silence the same calculation
+#' verbose <- FALSE
+#' sec <- timeit("My long calculation", Sys.sleep(0.5))
+#' sec
+#'
+#' ## Use timeit inside a function
+#' my_long_calculation <- function(verbose = TRUE) {
+#'     timeit("Step 1", Sys.sleep(0.1))
+#'     timeit("Step 2", {
+#'         x <- 10
+#'         Sys.sleep(0.2)
+#'     })
+#'     x
+#' }
+#' my_long_calculation()
+#' my_long_calculation(verbose = FALSE)
 #' 
+#' @export
+timeit <- function(msg, code) {
+    env <- parent.frame()
+    verbose <- FALSE
+    ## Check if verbose was defined in the parent environment.
+    if (exists("verbose", envir = env))
+        verbose <- env$verbose
+    if (verbose) message(msg, " ...", appendLF = FALSE)
+    time <- system.time(eval(code, env))
+    if (verbose) {
+        ## Use the lubridate package for automatic rounding to minutes, hours,
+        ## etc for long calculations.
+        if (suppressPackageStartupMessages(
+            requireNamespace("lubridate", quietly = TRUE))) {
+            diff <- lubridate::make_difftime(time[3])
+            message(sprintf(" %.2f %s", diff, attr(diff, "units")))
+        } else {
+            message(sprintf(" %.2f secs", time[3]))
+        }
+    }
+    invisible(time[3])
+}
+
+#' Return mappable regions of a genome.
+#'
+#' @inheritParams kmerize
 #' @param genome The \code{\link[BSgenome]{BSgenome}} DNA to be subset.
+#' @param verbose Describe the calculation steps with time.
 #' @param BPPARAM An optional \code{\link[BiocParallel]{BiocParallelParam}}
 #'     instance determining the parallel back-end to be used during evaluation,
 #'     or a \code{\link[base]{list}} of
@@ -225,37 +279,22 @@ align <- function(views, genome = NULL, ...) {
 #' @examples
 #' 
 #' \dontrun{
-#' mappable(BSgenome.Hsapiens.UCSC.hg38,
+#' mappable("BSgenome.Hsapiens.UCSC.hg38")
 #' }
 #'  
 #' @export
-mappable <- function(genome, BPPARAM = bpparam()) {
-    message(sprintf(
-        "[%6.2f sec] to load the genome",
-        system.time(
-            bsgenome <-
-                BSgenome::getBSgenome(genome))[3]))
-    message(sprintf(
-        "[%6.2f sec] to subset to standard DNA bases in the genome",
-        system.time(views <- stddna_from_genome(bsgenome, BPPARAM))[3]))
-    message(sprintf(
-        "[%6.2f sec] to chop up the genome into 36-mers",
-        system.time(kmers <- kmerize(views))[3]))
-    ## There isn't really much one can do to speed up the PDict creation.
-    message(sprintf(
-        "[%6.2f sec] to create the search dictionary",
-        system.time(pdict <- PDict(as(kmers,
-                                      "DNAStringSet")))[3]))
-    ## Chop up the views into smaller pieces.
-    message(sprintf(
-        "[%6.2f sec] to search the genome",
-        system.time(gr <- bplapply(seq_along(views),
-                                   ranges_hits,
-                                   views = views,
-                                   pdict = pdict,
-                                   BPPARAM = BPPARAM) %>%
-                        List() %>%
-                        unlist() %>%
-                        GenomicRanges::reduce())[3]))
-    gr
+mappable <- function(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE) {
+    timeit("Loading the genome", {
+        bsgenome <- BSgenome::getBSgenome(genome)
+    })
+    timeit("Subsetting to standard DNA bases", {
+        views <- stddna_from_genome(bsgenome, BPPARAM)
+    })
+    timeit("Chop up the genome into k-mers", {
+        kmers <- kmerize(views, kmer = kmer)
+    })
+    timeit("Search the genome for unique k-mer alignments", {
+        gr <- align(views, genome)
+    })
+    gr %>% GenomicRanges::reduce()
 }

@@ -3,6 +3,7 @@
 export("%>%")
 export(kmerize)
 export(mappable)
+export(timeit)
 exportMethods(coerce)
 importFrom(BSgenome,BSgenome)
 importFrom(BSgenome,BSgenomeViews)

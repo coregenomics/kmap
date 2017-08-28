@@ -2,29 +2,33 @@
 % Please edit documentation in R/BiostringsProjectNEW.R
 \name{mappable}
 \alias{mappable}
-\title{Return mappable regions.}
+\title{Return mappable regions of a genome.}
 \usage{
-mappable(genome, BPPARAM = bpparam())
+mappable(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE)
 }
 \arguments{
 \item{genome}{The \code{\link[BSgenome]{BSgenome}} DNA to be subset.}
+
+\item{kmer}{The size of overlapping segments.}
 
 \item{BPPARAM}{An optional \code{\link[BiocParallel]{BiocParallelParam}}
 instance determining the parallel back-end to be used during evaluation,
 or a \code{\link[base]{list}} of
 \code{\link[BiocParallel]{BiocParallelParam}} instances, to be applied in
 sequence for nested calls to \code{BiocParallel} functions.}
+
+\item{verbose}{Describe the calculation steps with time.}
 }
 \value{
 The \code{\link[GenomicRanges]{GRanges-class}} of mappable DNA sequences.
 }
 \description{
-Return mappable regions.
+Return mappable regions of a genome.
 }
 \examples{
 
 \dontrun{
-mappable(BSgenome.Hsapiens.UCSC.hg38,
+mappable("BSgenome.Hsapiens.UCSC.hg38")
 }
  
 }
