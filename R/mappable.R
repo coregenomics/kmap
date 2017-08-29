@@ -283,7 +283,7 @@ mappable <- function(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE,
                kmerize(kmer = kmer))
     timeit(sprintf("Search the genome for unique %d-mer alignments", kmer),
            gr <- align(views, genome, BPPARAM) %>% reduce())
-    ## Suppress warnings from BiocFileCache :/
+    ## Suppress warnings from BiocFileCache.
     path <- suppressWarnings(bfcnew(bfc, name, ext = ".gff3"))
     timeit(sprintf("Saving result to cache %s", path),
            rtracklayer::export.gff3(gr, path))
