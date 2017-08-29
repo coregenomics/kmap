@@ -258,6 +258,8 @@ timeit <- function(msg, code) {
 #' @export
 mappable <- function(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE,
                      cache_path = NULL) {
+    ## Validate genome string.
+    bsgenome <- BSgenome::getBSgenome(genome)
     ## Return the cached mappable object if it already exists.
     bfc <- BiocFileCache(cache_path)
     name <- paste("kmap", kmer, genome, sep = "_")
@@ -267,7 +269,6 @@ mappable <- function(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE,
         timeit(sprintf("Reading the cached mappable genome %s", genome), {
             gr <- rtracklayer::import(path)
             ## GFF3 does not serialize seqinfo.
-            bsgenome <- BSgenome::getBSgenome(genome)
             seqinfo(gr) <- seqinfo(bsgenome)
         })
         return(gr)
@@ -276,8 +277,6 @@ mappable <- function(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE,
                      kmer, genome))
     }
     ## No cached object available, so calculate mappable GRanges.
-    timeit(sprintf("Loading the %s genome", genome),
-           bsgenome <- BSgenome::getBSgenome(genome))
     timeit(sprintf("Removing non-standard DNA bases and chopping into %d-mers",
                    kmer),
            views <- stddna_from_genome(bsgenome, BPPARAM) %>%

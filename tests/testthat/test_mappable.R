@@ -8,6 +8,11 @@ clear_cache <- function() {
     dir.create(tempdir())
 }
 
+test_that("mappable validates genome name", {
+    expect_error(mappable(genome = "nonsense"), "BSgenome")
+    expect_error(mappable(genome = NULL), "BSgenome")
+})
+
 test_that("mappable loads GRanges from the the file cache", {
     ## Start with an empty cache in case of any failed or interrupted tests.
     clear_cache()
