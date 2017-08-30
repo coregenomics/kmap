@@ -2,15 +2,20 @@
 % Please edit documentation in R/mappable.R
 \name{mappable}
 \alias{mappable}
-\title{Return mappable regions of a genome.}
+\title{Return mappable regions of a genome for a given k-mer size.}
 \usage{
 mappable(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE,
   cache_path = NULL)
 }
 \arguments{
-\item{genome}{The \code{\link[BSgenome]{BSgenome}} DNA to be subset.}
+\item{genome}{Single character vector genome identifier.  Short hand
+identifiers like "hg38" can be used in interactive sessions but can fail
+in scripts due to intended behavior of
+\code{\link[BSgenome]{getBSgenome}} preferring unambiguous full
+identifiers like "BSgenome.Hsapiens.UCSC.hg38".}
 
-\item{kmer}{The size of overlapping segments.}
+\item{kmer}{The exact size of DNA segments to check for unique mapping in the
+genome.}
 
 \item{BPPARAM}{An optional \code{\link[BiocParallel]{BiocParallelParam}}
 instance determining the parallel back-end to be used during evaluation,
@@ -18,17 +23,24 @@ or a \code{\link[base]{list}} of
 \code{\link[BiocParallel]{BiocParallelParam}} instances, to be applied in
 sequence for nested calls to \code{BiocParallel} functions.}
 
-\item{verbose}{Print the calculation steps and their elapsed time.}
+\item{verbose}{Print messages of the calculation steps and their elapsed
+time.  Unfortunately, during first-time calculation, messages from
+\code{\link[QuasR]{qAlign}} are always shown because \code{qAlign} runs
+as a subprocess.}
 
 \item{cache_path}{Path to initialize
 \code{\link[BiocFileCache]{BiocFileCache}} object at a non-default path
 storage location.}
 }
 \value{
-The \code{\link[GenomicRanges]{GRanges-class}} of mappable DNA sequences.
+The \code{\link[GenomicRanges]{GRanges-class}} of mappable DNA
+    sequences.
 }
 \description{
-Return mappable regions of a genome.
+Genomes contain repetitive DNA, causing even long segments of DNA to map in
+multiple places.  For a fixed segment size \code{kmer}, \code{link{mappable}}
+checks whether DNA can map in multiple places in the genome and returns only
+regions which uniquely map.
 }
 \examples{
 \dontrun{
