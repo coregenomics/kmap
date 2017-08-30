@@ -42,8 +42,18 @@ test_that("mappable_cache_path loads GRanges from the the file cache", {
     ## Write test data to the cache.
     gr <- GRanges("chrI:1000-1200", seqinfo = Seqinfo(genome = genome_short))
     name <- mappable_cache_name(bsgenome)
+    ## The file does not exist, so trying to load it should return NULL.
+    expect_true(is.null(mappable_cache_load(name, bsgenome, path_cache)))
+    ## Now save some data
     mappable_cache_save(gr, name, path_cache)
     ## Read from cache.
+    gr_from_cache <- mappable_cache_load(name, bsgenome,
+                                         cache_path = path_cache)
+    mcols(gr_from_cache) <- NULL
+    expect_equal(gr_from_cache, gr)
+
+    ## Resaving should not overwrite existing data.
+    mappable_cache_save(gr, name, path_cache)
     gr_from_cache <- mappable_cache_load(name, bsgenome,
                                          cache_path = path_cache)
     mcols(gr_from_cache) <- NULL

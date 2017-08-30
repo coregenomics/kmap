@@ -76,13 +76,10 @@ stddna_from_genome <- function(bsgenome, BPPARAM = bpparam()) {
     ## Convert to Views here for convenience, instead of subsetting by
     ## chromosomes.  Views allow more vector operations and preserve metadata
     ## better than shuttling around chromosomes.
-    if (is(bsgenome, "BSgenomeViews"))
-        subject <- subject(bsgenome)
-    else
-        subject <- bsgenome
-    bsgenome %>% as("BSgenomeViews") %>%
-        stddna_from_views(BPPARAM = BPPARAM) %>%
-        BSgenomeViews(subject = subject)
+    if (! is(bsgenome, "BSgenomeViews"))
+        stop(sQuote(bsgenome), "should be a BSgenomeViews object.")
+    bsgenome %>% stddna_from_views(BPPARAM = BPPARAM) %>%
+        BSgenomeViews(subject = subject(bsgenome))
 }
 
 #' @rdname stddna
@@ -171,9 +168,11 @@ kmerize <- function(views, kmer = 36) {
 #' @param ... Extra arguments passed on to \code{\link[QuasR]{qAlign}}.
 #' @return The \code{\link[GenomicRanges]{GRanges-class}} of uniquely mapping DNA sequences.
 align <- function(views, genome = NULL, BPPARAM = bpparam(), ...) {
-    if (is.null(genome))
+    if (is.null(genome)) {
+        ## nocov start
         genome <- subject(views)@pkgname
-    else if (is(genome, "BSgenomeViews")) {
+        ## nocov end
+    } else if (is(genome, "BSgenomeViews")) {
         file_genome <- tempfile("genome-", fileext = ".fasta")
         on.exit(unlink(file_genome))
         writeXStringSet(as(genome, "XStringSet") %>%
@@ -248,7 +247,9 @@ timeit <- function(msg, code) {
             diff <- lubridate::make_difftime(time[3])
             message(sprintf(" %.2f %s", diff, attr(diff, "units")))
         } else {
+            ## nocov start
             message(sprintf(" %.2f secs", time[3]))
+            ## nocov end
         }
     }
     invisible(time[3])
