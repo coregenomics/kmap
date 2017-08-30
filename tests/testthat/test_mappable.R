@@ -55,15 +55,15 @@ test_that("mappable_cache_path loads GRanges from the the file cache", {
 })
 
 test_that("mappable generates and returns consistent GRanges", {
-    ## Travis seems to kill this test; perhaps for taking too long?
-    skip_on_travis()
-    ## TODO: Add ability to use fasta file for genome to speed up this test.
     clear_cache()
     on.exit(clear_cache())
-    expect_message(gr_1 <- mappable(genome, cache_path = path_cache),
+    ## Use a subset genome for speed, otherwise Travis will kill the test.
+    views <- as(bsgenome, "Views")
+    end(views@granges) <- 100
+    expect_message(gr_1 <- mappable(views, cache_path = path_cache),
                    "Saving result")
     expect_s4_class(gr_1, "GRanges")
-    expect_message(gr_2 <- mappable(genome, cache_path = path_cache),
+    expect_message(gr_2 <- mappable(views, cache_path = path_cache),
                    "Reading the cached")
     expect_s4_class(gr_2, "GRanges")
     mcols(gr_2) <- NULL

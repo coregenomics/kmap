@@ -18,6 +18,7 @@ Imports:
     BiocFileCache,
     BiocParallel,
     Biostrings,
+    digest,
     GenomeInfoDb,
     GenomicAlignments,
     GenomicRanges,

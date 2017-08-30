@@ -18,8 +18,8 @@ mappable_cache_load(name, bsgenome, cache_path = NULL)
 }
 \arguments{
 \item{bsgenome}{Apply the sequence information from this
-\code{\link[BSgenome]{BSgenome}} object to loaded
-\code{\link[GenomicRanges]{GRanges}}.}
+\code{\link[BSgenome]{BSgenome}} or \code{\link[BSgenome]{BSgenomeViews}}
+object to loaded \code{\link[GenomicRanges]{GRanges}}.}
 
 \item{kmer}{The exact size of DNA segments to check for unique mapping in the
 genome.}

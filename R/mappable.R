@@ -11,7 +11,7 @@
 #' @importFrom QuasR alignments qAlign
 #' @importFrom S4Vectors List
 #' @importFrom magrittr %>%
-#' @importFrom methods as
+#' @importFrom methods as is
 #' @importFrom plyr .
 #' @importFrom utils write.table
 NULL
@@ -76,8 +76,13 @@ stddna_from_genome <- function(bsgenome, BPPARAM = bpparam()) {
     ## Convert to Views here for convenience, instead of subsetting by
     ## chromosomes.  Views allow more vector operations and preserve metadata
     ## better than shuttling around chromosomes.
-    bsgenome %>% as("Views") %>% stddna_from_views(BPPARAM = BPPARAM) %>%
-        BSgenomeViews(subject = bsgenome)
+    if (is(bsgenome, "BSgenomeViews"))
+        subject <- subject(bsgenome)
+    else
+        subject <- bsgenome
+    bsgenome %>% as("BSgenomeViews") %>%
+        stddna_from_views(BPPARAM = BPPARAM) %>%
+        BSgenomeViews(subject = subject)
 }
 
 #' @rdname stddna
@@ -168,6 +173,14 @@ kmerize <- function(views, kmer = 36) {
 align <- function(views, genome = NULL, BPPARAM = bpparam(), ...) {
     if (is.null(genome))
         genome <- subject(views)@pkgname
+    else if (is(genome, "BSgenomeViews")) {
+        file_genome <- tempfile("genome-", fileext = ".fasta")
+        on.exit(unlink(file_genome))
+        writeXStringSet(as(genome, "XStringSet") %>%
+                        `names<-`(seqnames(genome)),
+                        file_genome)
+        genome <- file_genome
+    }
     ## QuasR does not yet support BiocParallel.
     cluster <- parallel::makeCluster(BPPARAM$workers)
     file_fasta <- tempfile("views-", fileext = ".fasta")
@@ -175,7 +188,8 @@ align <- function(views, genome = NULL, BPPARAM = bpparam(), ...) {
     on.exit({
         unlink(c(file_fasta, file_sample))
         parallel::stopCluster(cluster)
-    })
+    }
+    , add = TRUE)
     writeXStringSet(as(views, "XStringSet") %>% unique(), file_fasta)
     write.table(data.frame(FileName = file_fasta,
                            SampleName = "kmers"), file_sample, sep = "\t",
@@ -246,13 +260,28 @@ timeit <- function(msg, code) {
 #'
 #' @name mappable_cache
 #' @param bsgenome Apply the sequence information from this
-#'     \code{\link[BSgenome]{BSgenome}} object to loaded
-#'     \code{\link[GenomicRanges]{GRanges}}.
+#'     \code{\link[BSgenome]{BSgenome}} or \code{\link[BSgenome]{BSgenomeViews}}
+#'     object to loaded \code{\link[GenomicRanges]{GRanges}}.
 #' @inheritParams mappable
 #' @return \code{\link{mappable_cache_name}} returns a character vector
 #'     reference name for a given bsgenome and kmer size.
 mappable_cache_name <- function(bsgenome, kmer = 36) {
-    paste("kmap", kmer, GenomeInfoDb::bsgenomeName(bsgenome), sep = "_")
+    suffix <- NULL
+    if (is(bsgenome, "BSgenome")) {
+        pkgname <- bsgenome@pkgname
+    } else if (is(bsgenome, "BSgenomeViews")) {
+        pkgname <- subject(bsgenome)@pkgname
+        ## If views subset the genome, add checksum to identifier.
+        gr <- granges(bsgenome)
+        gr_full <- as(subject(bsgenome), "GRanges")
+        if (! identical(gr, gr_full)) {
+            suffix <- gr %>% as.character() %>% digest::sha1()
+        }
+    }
+    words <- c("kmap", kmer, pkgname)
+    if (! is.null(suffix))
+        words <- c(words, suffix)
+    paste(words, collapse = "_")
 }
 
 #' Path to cached GRanges.
@@ -346,13 +375,21 @@ mappable_cache_load <- function(name, bsgenome, cache_path = NULL) {
 #' @export
 mappable <- function(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE,
                      cache_path = NULL) {
-    ## Validate genome string.
-    bsgenome <- BSgenome::getBSgenome(genome)
+    if (is(genome, "BSgenomeViews")) {
+        ## Use potentially subset genome.
+        bsgenome <- genome
+    } else if (is.character(genome)) {
+        ## Validate genome string.
+        bsgenome <- BSgenome::getBSgenome(genome)
+    } else {
+        stop(sQuote(genome),
+             "must be a genome identifier or BSgenomeViews object")
+    }
     ## Return the cached mappable object if it already exists.
     name <- mappable_cache_name(bsgenome, kmer)
     path <- mappable_cache_path(name, cache_path)
     if (! is.null(path)) {
-        timeit(sprintf("Reading the cached mappable genome %s", genome), {
+        timeit(sprintf("Reading the cached mappable genome"), {
             gr <- mappable_cache_load(name, bsgenome, cache_path)
         })
         return(gr)
