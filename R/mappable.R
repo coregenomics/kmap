@@ -49,9 +49,12 @@ setAs("BSgenome", "GRanges",
               ignore.strand = TRUE) %>%
               `names<-`(NULL)
       })
-## Allow BSgenome to be converted to Views via GRanges.
-setAs("BSgenome", "Views",
+## Allow BSgenome to be converted to BSgenomeViews via GRanges.
+setAs("BSgenome", "BSgenomeViews",
       function(from) as(from, "GRanges") %>% BSgenomeViews(from, .))
+## Allow BSgenome to be converted to Views.
+setAs("BSgenome", "Views",
+      function(from) as(from, "BSgenomeViews"))
 
 #' Subset to standard DNA bases
 #'
@@ -410,7 +413,8 @@ mappable <- function(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE,
     ## No cached object available, so calculate mappable GRanges.
     timeit(sprintf("Removing non-standard DNA bases and chopping into %d-mers",
                    kmer),
-           views <- stddna_from_genome(bsgenome, BPPARAM) %>%
+           views <- stddna_from_genome(bsgenome %>% as("BSgenomeViews"),
+                                       BPPARAM) %>%
                kmerize(kmer = kmer))
     timeit(sprintf("Search the genome for unique %d-mer alignments", kmer),
            gr <- align(views, genome, BPPARAM) %>% reduce())
