@@ -285,6 +285,18 @@ mappable_cache_name <- function(bsgenome, kmer = 36) {
     paste(words, collapse = "_")
 }
 
+#' Initialize BiocFileCache assuming NULL to be default.
+#'
+#' @rdname mappable_cache
+#' @return \code{\link{mappable_cache_bfc}} returns a
+#'     \code{\link[BiocFileCache]{BiocFileCache}} object.
+mappable_cache_bfc <- function(cache_path = NULL) {
+    args <- list()
+    if (! is.null(cache_path))
+        args$cache <- cache_path
+    do.call(BiocFileCache, args)
+}
+
 #' Path to cached GRanges.
 #'
 #' @rdname mappable_cache
@@ -294,7 +306,7 @@ mappable_cache_name <- function(bsgenome, kmer = 36) {
 #'     path to the cached file path if the file exists, otherwise NULL.
 mappable_cache_path <- function(name, cache_path = NULL) {
     name                                # Raise error if name was omitted.
-    bfc <- BiocFileCache(cache_path)
+    bfc <- mappable_cache_bfc(cache_path)
     query <- bfcquery(bfc, name)
     path <- NULL
     if (bfccount(query) == 1) {
@@ -321,7 +333,7 @@ mappable_cache_save <- function(granges, name, cache_path = NULL,
     path <- mappable_cache_path(name, cache_path)
     if (! force && ! is.null(path))
         return(path)
-    bfc <- BiocFileCache(cache_path)
+    bfc <- mappable_cache_bfc(cache_path)
     path <- suppressWarnings(bfcnew(bfc, name, ext = ".gff3"))
     rtracklayer::export.gff3(granges, path)
     path
