@@ -9,8 +9,9 @@ bsgenome <- BSgenome::getBSgenome(genome)
 .seqname <- "NC_002655"
 .width <- 20
 .region_std <- 1
-.get_start <- function(pattern, width = 3) {
-    xstringviews <- Biostrings::mask(bsgenome[[.seqname]], pattern = pattern)
+.get_start <- function(pattern, width = 3, bsgenome_ = bsgenome,
+                       .seqname_ = .seqname) {
+    xstringviews <- Biostrings::mask(bsgenome_[[.seqname_]], pattern = pattern)
     xstringviews <- GenomicRanges::gaps(xstringviews)
     xstringviews[GenomicRanges::width(xstringviews) == width]
     GenomicRanges::start(head(xstringviews, 1))
