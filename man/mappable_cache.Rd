@@ -37,7 +37,7 @@ access \code{\link[BiocFileCache]{BiocFileCache}}.}
 \item{granges}{\code{\link[GenomicRanges]{GRanges}} to save to cache.}
 
 \item{force}{Save to cache even if an object already exists.  Only used to
-simulate a name collision for unit tests and not indended for use
+simulate a name collision for unit tests and not intended for use
 otherwise; using this will break your ability to run
 \code{\link{mappable_cache_load}}!}
 }
