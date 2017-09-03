@@ -2,7 +2,7 @@ context("Test mappable")
 
 ## Fixtures
 genome <- "BSgenome.Scerevisiae.UCSC.sacCer2"
-genome_short <- genome %>% strsplit("\\.") %>% unlist() %>% tail(1)
+genome_short <- tail(unlist(strsplit(genome, "\\.")), 1)
 bsgenome <- BSgenome::getBSgenome(genome)
 kmer <- formals(mappable)$kmer
 path_cache <- tempdir()

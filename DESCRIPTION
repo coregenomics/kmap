@@ -25,7 +25,6 @@ Imports:
     IRanges,
     QuasR,
     S4Vectors,
-    magrittr,
     methods,
     plyr,
     rtracklayer,

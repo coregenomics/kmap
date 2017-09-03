@@ -8,9 +8,10 @@ test_that("align generates .fasta files", {
     on.exit(unlink(file_genome))
     ## Subset the genome using `head` to speed up the calculation from several
     ## minutes to tens of seconds.
-    writeXStringSet(as(bsgenome, "Views") %>% as("XStringSet") %>%
-                    setNames(names(bsgenome)) %>% endoapply(head, 100),
-                    file_genome)
+    xstringset <- as(as(bsgenome, "Views"), "XStringSet")
+    names(xstringset) <- names(bsgenome)
+    xstringset <- endoapply(xstringset, head, 100)
+    writeXStringSet(xstringset, file_genome)
     ## None of the `views` will map uniquely, so add in a uniquely mapping
     ## string to validate.
     gr_unique <- GRanges("NC_008563:1-100", seqinfo = seqinfo(views))

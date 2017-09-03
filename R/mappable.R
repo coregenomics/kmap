@@ -10,19 +10,13 @@
 #' @importFrom IRanges IRanges
 #' @importFrom QuasR alignments qAlign
 #' @importFrom S4Vectors List
-#' @importFrom magrittr %>%
 #' @importFrom methods as is
 #' @importFrom plyr .
 #' @importFrom utils write.table
 NULL
 
-## Reexport to use in the the unittest suite, etc.
-#' @importFrom magrittr %>%
-#' @export
-magrittr::`%>%`
-
-## Export the `setAs` coercion methods below as described in Bioconductor S4 Objects
-## lab exercise:
+## Reexport the `setAs` coercion methods below as described in Bioconductor S4
+## Objects lab exercise:
 ## https://www.bioconductor.org/help/course-materials/2011/AdvancedRFeb2011Seattle/ImplementingS4Objects-lab.pdf # nolint
 ## Here we use ROxygen tags to manage the NAMESPACE file for us instead of hand
 ## editing the file as suggested by the above aged exercise.  The `setAs`
@@ -42,17 +36,18 @@ methods::coerce
 ## Allow BSgenome to be converted to GRanges and Views object.
 setAs("BSgenome", "GRanges",
       function(from) {
-          GenomicRanges::makeGRangesFromDataFrame(
+          gr <- GenomicRanges::makeGRangesFromDataFrame(
               data.frame(chr = seqnames(from),
                          start = rep(1, length(from)),
                          end = seqlengths(from)),
-              ignore.strand = TRUE) %>%
-              `names<-`(NULL)
+              ignore.strand = TRUE)
+          names(gr) <- NULL
+          gr
       })
 ## Allow BSgenome to be converted to BSgenomeViews via GRanges.
 setAs("BSgenome", "BSgenomeViews",
-      function(from) as(from, "GRanges") %>% BSgenomeViews(from, .))
-## Allow BSgenome to be converted to Views.
+      function(from) BSgenomeViews(from, as(from, "GRanges")))
+## Alias Views to BSgenomeViews.
 setAs("BSgenome", "Views",
       function(from) as(from, "BSgenomeViews"))
 
@@ -81,16 +76,18 @@ stddna_from_genome <- function(bsgenome, BPPARAM = bpparam()) {
     ## better than shuttling around chromosomes.
     if (! is(bsgenome, "BSgenomeViews"))
         stop(sQuote(bsgenome), "should be a BSgenomeViews object.")
-    bsgenome %>% stddna_from_views(BPPARAM = BPPARAM) %>%
-        BSgenomeViews(subject = subject(bsgenome))
+    views <- stddna_from_views(bsgenome, BPPARAM = BPPARAM)
+    BSgenomeViews(views, subject = subject(bsgenome))
 }
 
 #' @rdname stddna
 stddna_from_views <- function(views, BPPARAM = bpparam()) {
     bases_nonstd <- setdiff(DNA_ALPHABET, DNA_BASES)
     ## FIXME maybe parallelize this for larger genomes.
-    bplapply(bases_nonstd, gr_masked, views = views, BPPARAM = BPPARAM) %>%
-        sapply(gaps) %>% List() %>% unlist() %>% reduce() %>% gaps()
+    grl <- bplapply(bases_nonstd, gr_masked, views = views, BPPARAM = BPPARAM)
+    grl <- List(sapply(grl, gaps))
+    gr <- reduce(unlist(grl))
+    gaps(gr)
 }
 
 #' Remove motifs from BSgenomeViews
@@ -103,8 +100,9 @@ stddna_from_views <- function(views, BPPARAM = bpparam()) {
 #' @return A \code{\link[GenomicRanges]{GRanges-class}} object with \code{motif}
 #'     sequences removed.
 gr_masked <- function(views, motif = "N") {
-    views %>% as("DNAStringSet") %>% sapply(mask, motif) %>%
-        as("RangesList") %>% ir2gr(views)
+    dna <- as(views, "DNAStringSet")
+    rl <- as(sapply(dna, mask, motif), "RangesList")
+    ir2gr(rl, views)
 }
 
 #' Convert IRanges back to GRanges using metadata from Views.
@@ -140,9 +138,9 @@ ir2gr <- function(ranges, views) {
         stop("Length of IRanges must match Views")
     if (class(ranges) != "RangesList")
         ranges <- as(ranges, "RangesList")
-    ranges %>% shift(start(views) - 1) %>%
-        `names<-`(seqnames(views)) %>%
-        GRanges(seqinfo = seqinfo(views))
+    ranges <- shift(ranges, start(views) - 1)
+    names(ranges) <- seqnames(views)
+    GRanges(ranges, seqinfo = seqinfo(views))
 }
 
 #' Chop up BSgenomeViews into overlapping k-mers.
@@ -159,7 +157,7 @@ kmerize <- function(views, kmer = 36) {
         stop(sQuote("kmer"), " must be an integer, not ", sQuote(kmer))
     if (kmer < 1)
         stop(sQuote("kmer"), " must be >= 1, not ", sQuote(kmer))
-    gr <- slidingWindows(granges(views), kmer) %>% unlist()
+    gr <- unlist(slidingWindows(granges(views), kmer))
     BSgenomeViews(subject(views), gr)
 }
 
@@ -178,9 +176,9 @@ align <- function(views, genome = NULL, BPPARAM = bpparam(), ...) {
     } else if (is(genome, "BSgenomeViews")) {
         file_genome <- tempfile("genome-", fileext = ".fasta")
         on.exit(unlink(file_genome))
-        writeXStringSet(as(genome, "XStringSet") %>%
-                        `names<-`(seqnames(genome)),
-                        file_genome)
+        xstringset <- as(genome, "XStringSet")
+        names(xstringset) <- seqnames(genome)
+        writeXStringSet(xstringset, file_genome)
         genome <- file_genome
     }
     ## QuasR does not yet support BiocParallel.
@@ -192,15 +190,17 @@ align <- function(views, genome = NULL, BPPARAM = bpparam(), ...) {
         parallel::stopCluster(cluster)
     }
     , add = TRUE)
-    writeXStringSet(as(views, "XStringSet") %>% unique(), file_fasta)
+    xstringset <- unique(as(views, "XStringSet"))
+    writeXStringSet(xstringset, file_fasta)
     write.table(data.frame(FileName = file_fasta,
                            SampleName = "kmers"), file_sample, sep = "\t",
                 row.names = FALSE, quote = FALSE)
     ## Align!
     proj <- qAlign(file_sample, genome, clObj = cluster, ...)
-    alignments(proj)[[1]]$FileName %>% readGAlignments() %>%
-        `seqinfo<-`(value = seqinfo(views)) %>% `strand<-`(value = "*") %>%
-        as("GRanges")
+    gal <- readGAlignments(alignments(proj)[[1]]$FileName)
+    seqinfo(gal) <- seqinfo(views)
+    strand(gal) <- "*"
+    as(gal, "GRanges")
 }
 
 #' Run code with message and timing information.
@@ -279,7 +279,7 @@ mappable_cache_name <- function(bsgenome, kmer = 36) {
         gr <- granges(bsgenome)
         gr_full <- as(subject(bsgenome), "GRanges")
         if (! identical(gr, gr_full)) {
-            suffix <- gr %>% as.character() %>% digest::sha1()
+            suffix <- digest::sha1(as.character(gr))
         }
     }
     words <- c("kmap", kmer, pkgname)
@@ -412,12 +412,12 @@ mappable <- function(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE,
     }
     ## No cached object available, so calculate mappable GRanges.
     timeit(sprintf("Removing non-standard DNA bases and chopping into %d-mers",
-                   kmer),
-           views <- stddna_from_genome(bsgenome %>% as("BSgenomeViews"),
-                                       BPPARAM) %>%
-               kmerize(kmer = kmer))
+                   kmer), {
+           views <- stddna_from_genome(as(bsgenome, "BSgenomeViews"), BPPARAM)
+           views <- kmerize(views, kmer = kmer)
+    })
     timeit(sprintf("Search the genome for unique %d-mer alignments", kmer),
-           gr <- align(views, genome, BPPARAM) %>% reduce())
+           gr <- reduce(align(views, genome, BPPARAM)))
     ## Suppress warnings from BiocFileCache.
     timeit("Saving result to cache",
            mappable_cache_save(gr, name, cache_path))

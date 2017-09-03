@@ -17,12 +17,8 @@ test_that("stddna returns empty XRanges for empty Views", {
     expect_equal(stddna_from_views(views_), gr_)
 })
 test_that("stddna returns correct GRanges value for Views", {
-    expect_equal(sort(stddna_from_views(views)),
-                 sort(gr))
-})
-test_that("stddna returns contiguous GRanges", {
-    views_ <- views[c(1, length(views))]
-    gr_ <- gr[c(1, length(gr))]
-    expect_equal(sort(stddna_from_views(views_)),
-                 sort(gr_))
+    result <- stddna_from_views(views)
+    expect_equal(sort(result),
+                 reduce(gr))
+    expect_true(GenomicRanges::isDisjoint(stddna_from_views(views)))
 })
