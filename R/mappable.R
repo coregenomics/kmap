@@ -151,14 +151,15 @@ ir2gr <- function(ranges, views) {
 #' @return A \code{\link[BSgenome]{BSgenomeViews}} object with
 #'     \code{\link[IRanges]{width}} exactly equal to \code{kmer} size.
 #'     Ranges smaller than the \code{kmer} are dropped.
-kmerize <- function(views, kmer = 36) {
+kmerize <- function(views, kmer = 36, BPPARAM = bpparam()) {
     ## Validate inputs.
     if (! is.numeric(kmer) | kmer %% 1 != 0)
         stop(sQuote("kmer"), " must be an integer, not ", sQuote(kmer))
     if (kmer < 1)
         stop(sQuote("kmer"), " must be >= 1, not ", sQuote(kmer))
-    gr <- unlist(slidingWindows(granges(views), kmer))
-    BSgenomeViews(subject(views), gr)
+    bpl <- bplapply(granges(views), slidingWindows, kmer, BPPARAM = BPPARAM)
+    grl <- unlist(List(bpl))
+    BSgenomeViews(subject(views), unlist(grl))
 }
 
 #' Return GRanges of uniquely mapping hits.

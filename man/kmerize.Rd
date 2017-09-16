@@ -4,7 +4,7 @@
 \alias{kmerize}
 \title{Chop up BSgenomeViews into overlapping k-mers.}
 \usage{
-kmerize(views, kmer = 36)
+kmerize(views, kmer = 36, BPPARAM = bpparam())
 }
 \arguments{
 \item{views}{The \code{\link[BSgenome]{BSgenomeViews}} sequences to segment
