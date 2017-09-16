@@ -1,7 +1,7 @@
 context("Chopping views into k-mers")
 
 test_that("kmerize returns BSgenomeViews-class", {
-     expect_is(kmerize(views, kmer), "BSgenomeViews")
+    expect_is(kmerize(views, kmer), "BSgenomeViews")
 })
 test_that("kmerize returns ranges no wider than the kmer size", {
     kmer_ <- 10
