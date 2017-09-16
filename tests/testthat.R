@@ -12,9 +12,4 @@ BiocParallel:: register(BiocParallel::SerialParam())
 library(testthat)
 library(kmap)
 
-## Configure logger to write to console using message instead of cat to inspect
-## function message output.
-appender.message <- function() message(line)
-futile.logger::flog.appender(appender.message)
-
 test_check("kmap")

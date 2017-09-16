@@ -1,3 +1,8 @@
+## Configure logger to write to console using message instead of cat to inspect
+## function message output.
+append.message <- function(line) message(line)
+futile.logger::flog.appender(append.message)
+
 ## Biostring genome.  Generating a mock BSgenome relies on having many
 ## disk files, which is not a very practical fixture.  Therefore use
 ## the smallest existing genome with unknown bases.  This Ecoli has 3
