@@ -3,6 +3,7 @@
 #' @importFrom BiocParallel bplapply bpparam
 #' @importFrom Biostrings DNAStringSet DNA_ALPHABET DNA_BASES writeXStringSet
 #'     mask
+#' @importFrom futile.logger flog.info
 #' @importFrom GenomicAlignments readGAlignments
 #' @importFrom GenomeInfoDb seqinfo seqinfo<- seqlengths
 #' @importFrom GenomicRanges GRanges granges end gaps reduce seqnames shift
@@ -204,61 +205,6 @@ align <- function(views, genome = NULL, BPPARAM = bpparam(), ...) {
     as(gal, "GRanges")
 }
 
-#' Run code with message and timing information.
-#'
-#' Only print messages if the magic variable \code{verbose} is set in the
-#' environment from where \code{timeit} was called.
-#'
-#' @param msg Message describing the code block being run.
-#' @param code Block of code to evaluate and time.  Enclose in curly braces for
-#'     multiple lines.
-#' @return Invisibly returns evaluation time taken.
-#' @examples
-#' ## Use timeit directly inside a script
-#' verbose <- TRUE
-#' timeit("My long calculation", Sys.sleep(0.5))
-#' ## Silence the same calculation
-#' verbose <- FALSE
-#' sec <- timeit("My long calculation", Sys.sleep(0.5))
-#' sec
-#'
-#' ## Use timeit inside a function
-#' my_long_calculation <- function(verbose = TRUE) {
-#'     timeit("Step 1", Sys.sleep(0.1))
-#'     timeit("Step 2", {
-#'         x <- 10
-#'         Sys.sleep(0.2)
-#'     })
-#'     x
-#' }
-#' my_long_calculation()
-#' my_long_calculation(verbose = FALSE)
-#' 
-#' @export
-timeit <- function(msg, code) {
-    env <- parent.frame()
-    verbose <- FALSE
-    ## Check if verbose was defined in the parent environment.
-    if (exists("verbose", envir = env))
-        verbose <- env$verbose
-    if (verbose) message(msg, " ...", appendLF = FALSE)
-    time <- system.time(eval(code, env))
-    if (verbose) {
-        ## Use the lubridate package for automatic rounding to minutes, hours,
-        ## etc for long calculations.
-        if (suppressPackageStartupMessages(
-            requireNamespace("lubridate", quietly = TRUE))) {
-            diff <- lubridate::make_difftime(time[3])
-            message(sprintf(" %.2f %s", diff, attr(diff, "units")))
-        } else {
-            ## nocov start
-            message(sprintf(" %.2f secs", time[3]))
-            ## nocov end
-        }
-    }
-    invisible(time[3])
-}
-
 #' Internal helper functions to manage mappable GRanges in BiocFileCache.
 #'
 #' Reference name for mappable genome of a given k-mer size.
@@ -406,21 +352,19 @@ mappable <- function(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE,
     name <- mappable_cache_name(bsgenome, kmer)
     path <- mappable_cache_path(name, cache_path)
     if (! is.null(path)) {
-        timeit(sprintf("Reading the cached mappable genome"), {
-            gr <- mappable_cache_load(name, bsgenome, cache_path)
-        })
+        flog.info(sprintf("Reading the cached mappable genome"))
+        gr <- mappable_cache_load(name, bsgenome, cache_path)
         return(gr)
     }
     ## No cached object available, so calculate mappable GRanges.
-    timeit(sprintf("Removing non-standard DNA bases and chopping into %d-mers",
-                   kmer), {
-           views <- stddna_from_genome(as(bsgenome, "BSgenomeViews"), BPPARAM)
-           views <- kmerize(views, kmer = kmer)
-    })
-    timeit(sprintf("Search the genome for unique %d-mer alignments", kmer),
-           gr <- reduce(align(views, genome, BPPARAM)))
+    flog.info("Removing non-standard DNA bases")
+    views <- stddna_from_genome(as(bsgenome, "BSgenomeViews"), BPPARAM)
+    flog.info(sprintf("Chopping into %d-mers", kmer))
+    views <- kmerize(views, kmer = kmer, BPPARAM)
+    flog.info(sprintf("Search the genome for unique %d-mer alignments", kmer))
+    gr <- reduce(align(views, genome, BPPARAM))
     ## Suppress warnings from BiocFileCache.
-    timeit("Saving result to cache",
-           mappable_cache_save(gr, name, cache_path))
+    flog.info("Saving result to cache")
+    mappable_cache_save(gr, name, cache_path)
     gr
 }
