@@ -146,6 +146,7 @@ ir2gr <- function(ranges, views) {
 
 #' Chop up BSgenomeViews into overlapping k-mers.
 #'
+#' @inheritParams stddna
 #' @param views The \code{\link[BSgenome]{BSgenomeViews}} sequences to segment
 #'     into overlapping k-mers.
 #' @param kmer The size of overlapping segments.

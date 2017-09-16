@@ -11,6 +11,12 @@ kmerize(views, kmer = 36, BPPARAM = bpparam())
 into overlapping k-mers.}
 
 \item{kmer}{The size of overlapping segments.}
+
+\item{BPPARAM}{An optional \code{\link[BiocParallel]{BiocParallelParam}}
+instance determining the parallel back-end to be used during evaluation,
+or a \code{\link[base]{list}} of
+\code{\link[BiocParallel]{BiocParallelParam}} instances, to be applied in
+sequence for nested calls to \code{BiocParallel} functions.}
 }
 \value{
 A \code{\link[BSgenome]{BSgenomeViews}} object with
