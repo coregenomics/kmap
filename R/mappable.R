@@ -8,9 +8,10 @@
 #' @importFrom GenomeInfoDb seqinfo seqinfo<- seqlengths
 #' @importFrom GenomicRanges GRanges granges end gaps reduce seqnames shift
 #'     slidingWindows start strand<-
-#' @importFrom IRanges IRanges
+#' @importFrom IRanges IRanges findOverlaps
 #' @importFrom QuasR alignments qAlign
-#' @importFrom S4Vectors List
+#' @importFrom S4Vectors List Rle elementNROWS from mendoapply runLength
+#'     runLength<- runValue to
 #' @importFrom methods as is
 #' @importFrom plyr .
 #' @importFrom utils write.table
@@ -103,46 +104,55 @@ stddna_from_views <- function(views, BPPARAM = bpparam()) {
 #'     sequences removed.
 gr_masked <- function(views, motif = "N") {
     dna <- as(views, "DNAStringSet")
-    rl <- as(sapply(dna, mask, motif), "RangesList")
-    ir2gr(rl, views)
+    rl <- as(sapply(dna, mask, motif), "IRangesList")
+    rl <- mendoapply(shift, rl, start(views) - 1)
+    seqnames <- expand_rle(seqnames(views), Rle(elementNROWS(rl)))
+    strand <- "*"
+    if (length(rl) == 0) {
+        strand <- NULL
+        seqnames <- NULL
+    }
+    GRanges(ranges = unlist(rl),
+            strand = strand,
+            seqnames = seqnames,
+            seqinfo = seqinfo(views))
 }
 
-#' Convert IRanges back to GRanges using metadata from Views.
+#' Insert into Rle runLength.
 #'
-#' We lose the \code{\link[GenomeInfoDb]{seqnames}} and
-#' \code{\link[GenomeInfoDb]{seqinfo}} metadata when transforming the underlying
-#' \code{\link[Biostrings]{DNAString}} of a
-#' \code{\link[BSgenome]{BSgenomeViews}} object into
-#' \code{\link[IRanges]{IRanges}}.  \code{\link{ir2gr}} recovers that
-#' information from the original \code{\link[BSgenome]{BSgenomeViews}} to up
-#' convert \code{\link[IRanges]{IRanges}} to
-#' \code{\link[GenomicRanges]{GRanges}}.
-#'
-#' @inheritParams stddna
-#' @param ranges IRanges
-#' @return GRanges
+#' @param rle Rle object to expand
+#' @param size Rle with runValues of 1 for no insertion and runValues of > 1
+#'     corresponding to insertions.  The runLength encodes the positions of
+#'     insertions in \code{rle}
+#' @return Rle with insertions
 #' @examples
-#' ## This example finds GRanges not containing the DNA base "T"
-#' ## in a section of the Ecoli genome.
-#' bsgenome <- BSgenome::getBSgenome("BSgenome.Ecoli.NCBI.20080805")
-#' views <- BSgenomeViews(bsgenome, GRanges("AC_000091:11-20"))
-#' views
-#' remaining <- mask(views[[1]], "T")
-#' ir <- as(remaining, "IRanges")
-#' ir
-#' ## ir now has more rows than views after being split by `mask`.
-#' ## Duplicate the rows to match.
-#' views <- rep(views, length.out = length(ir))
-#' ## Convert IRanges to GRanges
-#' kmap:::ir2gr(ir, views)
-ir2gr <- function(ranges, views) {
-    if (NROW(ranges) != NROW(views))
-        stop("Length of IRanges must match Views")
-    if (class(ranges) != "RangesList")
-        ranges <- as(ranges, "RangesList")
-    ranges <- shift(ranges, start(views) - 1)
-    names(ranges) <- seqnames(views)
-    GRanges(ranges, seqinfo = seqinfo(views))
+#' rle <- S4Vectors::Rle(c("a", "a", "a", "b", "c", "c"))
+#' rle
+#' size <- S4Vectors::Rle(c(1, 2, 1, 2, 2, 1))
+#' expand_rle(rle, size)
+expand_rle <- function(rle, size) {
+    ## Putting in the effort to modify the Rle is necessary because we're
+    ## dealing with large memory objects.
+    stopifnot(is(rle, "Rle"))
+    stopifnot(is(size, "Rle"))
+    stopifnot(length(rle) == length(size))
+    ## Return original input if no expansion needed.
+    if (all(size == 1)) {
+        return(rle)
+    }
+    expand_by <- runValue(size) - 1
+    to_expand <- expand_by > 0
+    rle_ranges <- IRanges(start(rle), end(rle))
+    ## Deduplicate run values by also checking end, not just start.
+    start <- unlist(mapply(seq,
+                           start(size)[to_expand],
+                           end(size)[to_expand]))
+    insertions <- IRanges(start = start, width = 1)
+    ol <- findOverlaps(rle_ranges, insertions)
+    expansion <- rep(0, length(rle_ranges))
+    expansion[from(ol)] <- (size[start] - 1)[to(ol)]
+    runLength(rle) <- runLength(rle) + expansion
+    rle
 }
 
 #' Chop up BSgenomeViews into overlapping k-mers.
@@ -154,14 +164,13 @@ ir2gr <- function(ranges, views) {
 #' @return A \code{\link[BSgenome]{BSgenomeViews}} object with
 #'     \code{\link[IRanges]{width}} exactly equal to \code{kmer} size.
 #'     Ranges smaller than the \code{kmer} are dropped.
-kmerize <- function(views, kmer = 36, BPPARAM = bpparam()) {
+kmerize <- function(views, kmer = 36) {
     ## Validate inputs.
     if (! is.numeric(kmer) | kmer %% 1 != 0)
         stop(sQuote("kmer"), " must be an integer, not ", sQuote(kmer))
     if (kmer < 1)
         stop(sQuote("kmer"), " must be >= 1, not ", sQuote(kmer))
-    bpl <- bplapply(granges(views), slidingWindows, kmer, BPPARAM = BPPARAM)
-    grl <- unlist(List(bpl))
+    grl <- slidingWindows(granges(views), kmer)
     BSgenomeViews(subject(views), unlist(grl))
 }
 
@@ -362,7 +371,7 @@ mappable <- function(genome, kmer = 36, BPPARAM = bpparam(), verbose = TRUE,
     flog.info("Removing non-standard DNA bases")
     views <- stddna_from_genome(as(bsgenome, "BSgenomeViews"), BPPARAM)
     flog.info(sprintf("Chopping into %d-mers", kmer))
-    views <- kmerize(views, kmer = kmer, BPPARAM)
+    views <- kmerize(views, kmer = kmer)
     flog.info(sprintf("Search the genome for unique %d-mer alignments", kmer))
     gr <- reduce(align(views, genome, BPPARAM))
     ## Suppress warnings from BiocFileCache.

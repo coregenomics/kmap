@@ -4,19 +4,13 @@
 \alias{kmerize}
 \title{Chop up BSgenomeViews into overlapping k-mers.}
 \usage{
-kmerize(views, kmer = 36, BPPARAM = bpparam())
+kmerize(views, kmer = 36)
 }
 \arguments{
 \item{views}{The \code{\link[BSgenome]{BSgenomeViews}} sequences to segment
 into overlapping k-mers.}
 
 \item{kmer}{The size of overlapping segments.}
-
-\item{BPPARAM}{An optional \code{\link[BiocParallel]{BiocParallelParam}}
-instance determining the parallel back-end to be used during evaluation,
-or a \code{\link[base]{list}} of
-\code{\link[BiocParallel]{BiocParallelParam}} instances, to be applied in
-sequence for nested calls to \code{BiocParallel} functions.}
 }
 \value{
 A \code{\link[BSgenome]{BSgenomeViews}} object with

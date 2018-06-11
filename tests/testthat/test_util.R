@@ -1,9 +1,17 @@
 context("Utils")
 
-test_that("ir2gr ensures inputs have the same length", {
-    ## in a section of the Ecoli genome.
-    ir <- ranges(views)
-    expect_error(ir2gr(head(ir, 2), views))
+test_that("expand_rle grows input Rle", {
+    input <- Rle(c("a", "a", "a", "b", "c"))
+    size <- Rle(c(1, 1, 2, 1, 3))
+    expected <- Rle(c("a", "a", "a", "a", "b", "c", "c", "c"))
+    result <- expand_rle(input, size)
+    expect_equal(expected, result)
+    ## Test case of duplicated run values b and c both being run length 2.
+    input <- Rle(c("a", "a", "a", "b", "c", "c"))
+    size <- Rle(c(1, 2, 1, 2, 2, 1))
+    expected <- Rle(c("a", "a", "a", "a", "b", "b", "c", "c", "c"))
+    result <- expand_rle(input, size)
+    expect_equal(expected, result)
 })
 
 test_that("coerce from BSgenome returns GRanges", {
