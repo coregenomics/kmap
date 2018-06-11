@@ -129,7 +129,7 @@ gr_masked <- function(views, motif = "N") {
 #' rle <- S4Vectors::Rle(c("a", "a", "a", "b", "c", "c"))
 #' rle
 #' size <- S4Vectors::Rle(c(1, 2, 1, 2, 2, 1))
-#' expand_rle(rle, size)
+#' kmap:::expand_rle(rle, size)
 expand_rle <- function(rle, size) {
     ## Putting in the effort to modify the Rle is necessary because we're
     ## dealing with large memory objects.

@@ -23,5 +23,5 @@ Insert into Rle runLength.
 rle <- S4Vectors::Rle(c("a", "a", "a", "b", "c", "c"))
 rle
 size <- S4Vectors::Rle(c(1, 2, 1, 2, 2, 1))
-expand_rle(rle, size)
+kmap:::expand_rle(rle, size)
 }
