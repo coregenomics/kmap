@@ -25,6 +25,7 @@ NULL
 ## the base R `as` help.  This creates the following check warning:
 ##
 ##   Undocumented S4 methods:
+##     generic 'coerce' and siglist 'BSgenome,BSgenomeViews'
 ##     generic 'coerce' and siglist 'BSgenome,GRanges'
 ##     generic 'coerce' and siglist 'BSgenome,Views'
 ##   All user level objects in a package (including S4 classes and methods)
