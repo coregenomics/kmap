@@ -22,12 +22,11 @@ gr <- mappable("hg38", kmer = 36)
 Install the latest version of kmer using:
 
 ``` sh
-devtools::install_github("coregenomics/kmap", repos = BiocInstaller::biocinstallRepos())
+BiocManager::install("coregenomics/kmap")
 ```
 
-If the above command fails, install Bioconductor and the `devtools` package.
+If the above command fails, install Bioconductor.
 
 ``` R
-source("https://bioconductor.org/biocLite.R")
-install.packages("devtools")
+install.packages("BiocManager")
 ```
